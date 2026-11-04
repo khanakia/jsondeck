@@ -1,0 +1,1767 @@
+[
+  {
+    "path": "data",
+    "type": "Record<string, unknown> | unknown[] | string",
+    "default": null,
+    "description": "Object of named arrays, or a selector of a <script type=\"application/json\"> tag holding one.",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "tables",
+    "type": "Record<string, TableConfig>",
+    "default": null,
+    "description": "Per-table settings, keyed by the table's name in data.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "tables.<table>",
+    "type": "TableConfig",
+    "default": null,
+    "description": "Settings for one table (a named array in data).",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "tables.<table>.label",
+    "type": "string",
+    "default": null,
+    "description": "Tab and title text for the table (default: humanized name).",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.hidden",
+    "type": "boolean",
+    "default": null,
+    "description": "true = drop the table.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.key",
+    "type": "string",
+    "default": null,
+    "description": "Row id column (stable row keys).",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.columns",
+    "type": "Record<string, ColumnConfig | string>",
+    "default": null,
+    "description": "Per-column settings: a type name shorthand (\"mono\") or a column config object.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.columns.<column>",
+    "type": "ColumnConfig | string",
+    "default": null,
+    "description": "One column: a type name shorthand (\"mono\", \"badge\") or a column config object.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.type",
+    "type": "string",
+    "default": null,
+    "description": "A built-in type, an alias (\"badge\"), or a type registered in `types`.",
+    "descriptionSource": "jsdoc",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.label",
+    "type": "string",
+    "default": null,
+    "description": "Header text (default: humanized key).",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.hidden",
+    "type": "boolean",
+    "default": null,
+    "description": "Hide the column (it can be shown again from the Columns menu).",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.width",
+    "type": "number",
+    "default": null,
+    "description": "Width in px.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.minWidth",
+    "type": "number",
+    "default": null,
+    "description": "Smallest width in px when resizing.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.pin",
+    "type": "Pin",
+    "default": null,
+    "description": "Pin the column to the left or right edge.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.align",
+    "type": "Align",
+    "default": null,
+    "description": "Cell text alignment.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.wrap",
+    "type": "boolean",
+    "default": null,
+    "description": "Wrap long text instead of truncating it.",
+    "descriptionSource": "jsdoc",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.className",
+    "type": "string",
+    "default": null,
+    "description": "Extra CSS class on the column's cells.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.tooltip",
+    "type": "boolean | Bivariant<(value: unknown, row: Row) => string>",
+    "default": null,
+    "description": "true = the cell's text; a function = your text; false = none.",
+    "descriptionSource": "jsdoc",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.value",
+    "type": "RowFn<Row, unknown>",
+    "default": null,
+    "description": "Computed column: a column id not in the data plus `value` makes a new column.",
+    "descriptionSource": "jsdoc",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.format",
+    "type": "string | Bivariant<(value: unknown, row: Row) => string>",
+    "default": null,
+    "description": "A format name with an optional argument (\"currency:USD\", \"number:2\", \"bytes\", \"percent\", \"relative\") or a function.",
+    "descriptionSource": "jsdoc",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.render",
+    "type": "RenderFn",
+    "default": null,
+    "description": "Custom cell renderer: return text, a DOM node or a React element.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.link",
+    "type": "string | RowFn<Row, string>",
+    "default": null,
+    "description": "URL template (\"https://x/{id}\") filled from the row, or a function.",
+    "descriptionSource": "jsdoc",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.order",
+    "type": "string[]",
+    "default": null,
+    "description": "Enum: the order values sort in and list in the filter.",
+    "descriptionSource": "jsdoc",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.colors",
+    "type": "Record<string, string>",
+    "default": null,
+    "description": "Enum: value → tone name or CSS colour. Unset values get a calm neutral.",
+    "descriptionSource": "jsdoc",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.filter",
+    "type": "ColumnFilterConfig",
+    "default": null,
+    "description": "Filter control: false (none), a kind, or { type, options, operators }.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.filter.type",
+    "type": "FilterKind",
+    "default": null,
+    "description": "Filter control kind.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.filter.options",
+    "type": "(string | { value: string; label: string })[]",
+    "default": null,
+    "description": "Fixed choices for a select filter: strings or { value, label }.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.filter.options[].value",
+    "type": "string",
+    "default": null,
+    "description": "Value the filter matches.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.filter.options[].label",
+    "type": "string",
+    "default": null,
+    "description": "Text shown for the choice.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.filter.operators",
+    "type": "FilterOperator[]",
+    "default": null,
+    "description": "Limit the operators offered for this column.",
+    "descriptionSource": "hand-written",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.sort",
+    "type": "false | Comparator",
+    "default": null,
+    "description": "false = not sortable; a function = comparator of raw values.",
+    "descriptionSource": "jsdoc",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.columns.<column>.search",
+    "type": "false",
+    "default": null,
+    "description": "false = global search skips this column.",
+    "descriptionSource": "jsdoc",
+    "level": "column"
+  },
+  {
+    "path": "tables.<table>.computed",
+    "type": "Record<string, ColumnConfig>",
+    "default": null,
+    "description": "Computed columns: name → column config with value(row). Same as a `columns` entry whose name is not in the data.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.columnOrder",
+    "type": "string[]",
+    "default": null,
+    "description": "Columns listed here come first, the rest follow in data order.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.include",
+    "type": "string[]",
+    "default": null,
+    "description": "Only these columns (plus computed ones).",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.exclude",
+    "type": "string[]",
+    "default": null,
+    "description": "Columns to leave out.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.defaultSort",
+    "type": "SortConfig[]",
+    "default": null,
+    "description": "Initial sort: \"col\" (asc), \"-col\" (desc) or { column, direction }.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.defaultSort[].column",
+    "type": "string",
+    "default": null,
+    "description": "Column to sort by.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.defaultSort[].direction",
+    "type": "\"asc\" | \"desc\"",
+    "default": null,
+    "description": "asc (default) or desc.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.defaultFilters",
+    "type": "FilterConfig[]",
+    "default": null,
+    "description": "Initial filters: { column, operator?, value }.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.defaultFilters[].column",
+    "type": "string",
+    "default": null,
+    "description": "Column to filter.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.defaultFilters[].operator",
+    "type": "FilterOperator",
+    "default": null,
+    "description": "Filter operator (default: the column's default operator).",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.defaultFilters[].value",
+    "type": "unknown",
+    "default": null,
+    "description": "Value to filter by (an array for in / is any of).",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.pageSize",
+    "type": "number",
+    "default": null,
+    "description": "Rows per page for this table.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.search",
+    "type": "false | { columns: string[] }",
+    "default": null,
+    "description": "false = no search box; { columns } = search only these.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.search.columns",
+    "type": "string[]",
+    "default": null,
+    "description": "Columns the search box looks in.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.filters",
+    "type": "false",
+    "default": null,
+    "description": "false = no filter button.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.views",
+    "type": "false | ViewsConfig",
+    "default": null,
+    "description": "Saved views for this table (false = off).",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.views.storage",
+    "type": "unknown",
+    "default": null,
+    "description": "A ViewStorage implementation for this table's saved views.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.rowClass",
+    "type": "RowFn<Row, string>",
+    "default": null,
+    "description": "Extra CSS class for a row, from the row.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.onRowClick",
+    "type": "RowFn<Row, void>",
+    "default": null,
+    "description": "Called with the row when a row is clicked.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.expand",
+    "type": "false | \"inline\" | \"drawer\" | { relation: string }",
+    "default": "\"inline\" when `detail` is set",
+    "description": "Row expansion: inline detail panel (chevron column), the drawer, or off. Default: \"inline\" when `detail` is set.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.expand.relation",
+    "type": "string",
+    "default": null,
+    "description": "Expand a row into the rows of this relation (its label).",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.detail",
+    "type": "DetailConfig",
+    "default": null,
+    "description": "What the expanded row shows. Without `fields`: every column hidden in the table.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.detail.fields",
+    "type": "string[]",
+    "default": null,
+    "description": "Fields shown in the expanded row (default: every hidden column).",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.detail.columns",
+    "type": "1 | 2 | 3 | 4",
+    "default": "3",
+    "description": "Columns of the field grid (1–4, default 3).",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.detail.render",
+    "type": "RenderFn<Row, Row>",
+    "default": null,
+    "description": "Custom renderer for the whole detail panel.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.detail.related",
+    "type": "boolean",
+    "default": null,
+    "description": "Show related rows (relations) as nested tables, recursively.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.groupBy",
+    "type": "string | string[]",
+    "default": null,
+    "description": "Group rows by one or more columns (collapsible group rows).",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.groupAggregates",
+    "type": "Record<string, GroupAggregate>",
+    "default": null,
+    "description": "Aggregates shown in each group row, per column.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.quickFilters",
+    "type": "QuickFilterConfig[]",
+    "default": null,
+    "description": "One-row filter strip above the table, synced with the filter pills.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.quickFilters[].column",
+    "type": "string",
+    "default": null,
+    "description": "Column the quick filter controls.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.quickFilters[].kind",
+    "type": "(typeof QUICK_FILTER_KINDS)[number]",
+    "default": null,
+    "description": "range (min/max + slider), chips, toggle or search.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.quickFilters[].label",
+    "type": "string",
+    "default": null,
+    "description": "Label shown before the control.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.selectable",
+    "type": "boolean",
+    "default": null,
+    "description": "Checkbox column + selection bar (copy / clear).",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.density",
+    "type": "Density",
+    "default": null,
+    "description": "Row height: compact (28px, default) or comfortable (36px). Overrides the global setting.",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.rowActions",
+    "type": "RowActionConfig[]",
+    "default": null,
+    "description": "Extra right-click menu items. `rows` = the selected rows (or just this row).",
+    "descriptionSource": "jsdoc",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.rowActions[].label",
+    "type": "string",
+    "default": null,
+    "description": "Menu item text.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.rowActions[].icon",
+    "type": "string",
+    "default": null,
+    "description": "Icon name for the menu item.",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tables.<table>.rowActions[].onSelect",
+    "type": "Bivariant<(row: Row, rows: Row[]) => void>",
+    "default": null,
+    "description": "Called with the clicked row and the selected rows (or just that row).",
+    "descriptionSource": "hand-written",
+    "level": "table"
+  },
+  {
+    "path": "tableOrder",
+    "type": "string[]",
+    "default": null,
+    "description": "Tab order; tables not listed follow in data order.",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "theme",
+    "type": "Theme",
+    "default": null,
+    "description": "Theme of this deck: inherit (default) follows the page theme, auto follows the OS, light/dark pin it.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "pageSize",
+    "type": "number",
+    "default": null,
+    "description": "Default rows per page.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "pageSizes",
+    "type": "number[]",
+    "default": null,
+    "description": "Choices in the rows-per-page picker.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "views",
+    "type": "false | ViewsConfig",
+    "default": null,
+    "description": "Saved views: false turns them off; { storage } plugs in another store (default: this browser's localStorage).",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "views.storage",
+    "type": "unknown",
+    "default": null,
+    "description": "A ViewStorage implementation (list/get/save/delete/setDefault/setFavorite); default: localStorage.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "renderers",
+    "type": "Record<string, RenderFn>",
+    "default": null,
+    "description": "Replace the renderer of a type (built-in or registered).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "formats",
+    "type": "Record<string, FormatFn>",
+    "default": null,
+    "description": "Add or replace named formats.",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "labels",
+    "type": "Partial<Labels>",
+    "default": null,
+    "description": "Every UI string. Templates use {from} {to} {total} {n} {shown} {table}.",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "acronyms",
+    "type": "string[]",
+    "default": "list",
+    "description": "Words shown in capitals in generated labels (replaces the default list).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "guess",
+    "type": "GuessOptions",
+    "default": null,
+    "description": "Tuning for column type guessing.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "guess.enumMaxDistinct",
+    "type": "number",
+    "default": "12",
+    "description": "An enum has at most this many distinct values (default 12).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "guess.enumMaxRatio",
+    "type": "number",
+    "default": "0.34",
+    "description": "… and distinct values are at most this share of non-empty values (default 0.34).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "guess.enumMaxLen",
+    "type": "number",
+    "default": "32",
+    "description": "Enum values longer than this are prose, not categories (default 32).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "guess.longTextLen",
+    "type": "number",
+    "default": "80",
+    "description": "Text whose longest value passes this is long text (default 80).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "guess.sampleSize",
+    "type": "number",
+    "default": "2000",
+    "description": "Rows looked at when guessing (default 2000).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "guess.knownOrders",
+    "type": "string[][]",
+    "default": "critical…none, p0…p4",
+    "description": "Value sets with a natural order (default: critical…none, p0…p4).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "guess.detectors",
+    "type": "Detector[]",
+    "default": null,
+    "description": "Custom detectors, tried in order before the built-in checks.",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "guess.detectors[].type",
+    "type": "string",
+    "default": null,
+    "description": "Type name to give a column when the test passes.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "guess.detectors[].test",
+    "type": "(values: unknown[]) => boolean",
+    "default": null,
+    "description": "Gets the non-empty sample values; return true to claim the column.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "types",
+    "type": "Record<string, TypeDef>",
+    "default": null,
+    "description": "Register a new column type or replace a built-in one.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "types.<type>",
+    "type": "TypeDef",
+    "default": null,
+    "description": "One registered type.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "types.<type>.render",
+    "type": "RenderFn",
+    "default": null,
+    "description": "Renderer for cells of this type.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "types.<type>.filter",
+    "type": "FilterKind | false",
+    "default": null,
+    "description": "Filter control for this type (false = none).",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "types.<type>.sort",
+    "type": "SortKind | Comparator | false",
+    "default": null,
+    "description": "Sort kind or comparator for this type (false = not sortable).",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "types.<type>.align",
+    "type": "Align",
+    "default": null,
+    "description": "Default alignment for this type.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "types.<type>.format",
+    "type": "string | FormatFn",
+    "default": null,
+    "description": "Default format for this type.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "types.<type>.width",
+    "type": "number",
+    "default": null,
+    "description": "Default column width in px.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "relations",
+    "type": "RelationConfig[]",
+    "default": null,
+    "description": "`table.column` → `table.column` links (cells become links; the row drawer shows related rows).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "relations[].from",
+    "type": "string",
+    "default": null,
+    "description": "`table.column` holding the pointer.",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "relations[].to",
+    "type": "string",
+    "default": null,
+    "description": "`table.column` being pointed at (usually the target table's key).",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "relations[].label",
+    "type": "string",
+    "default": null,
+    "description": "Name of the forward link (default: the target table).",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "relations[].reverseLabel",
+    "type": "string",
+    "default": null,
+    "description": "Name of the reverse link (default: the source table).",
+    "descriptionSource": "hand-written",
+    "level": "global"
+  },
+  {
+    "path": "pages",
+    "type": "PageConfig[]",
+    "default": null,
+    "description": "Page layouts. Without it: one page, one tab per table.",
+    "descriptionSource": "jsdoc",
+    "level": "page"
+  },
+  {
+    "path": "pages[].id",
+    "type": "string",
+    "default": "from the title",
+    "description": "URL hash id (`#/servers`); default: from the title.",
+    "descriptionSource": "jsdoc",
+    "level": "page"
+  },
+  {
+    "path": "pages[].title",
+    "type": "string",
+    "default": null,
+    "description": "Page title (nav label).",
+    "descriptionSource": "hand-written",
+    "level": "page"
+  },
+  {
+    "path": "pages[].filters",
+    "type": "string[]",
+    "default": null,
+    "description": "Page-level filter bar: `table.field` or a bare field shared by components.",
+    "descriptionSource": "jsdoc",
+    "level": "page"
+  },
+  {
+    "path": "pages[].sections",
+    "type": "SectionConfig[]",
+    "default": null,
+    "description": "The page's sections, top to bottom.",
+    "descriptionSource": "hand-written",
+    "level": "page"
+  },
+  {
+    "path": "pages[].sections[].title",
+    "type": "string",
+    "default": null,
+    "description": "Section heading.",
+    "descriptionSource": "hand-written",
+    "level": "page"
+  },
+  {
+    "path": "pages[].sections[].description",
+    "type": "string",
+    "default": null,
+    "description": "Text under the heading.",
+    "descriptionSource": "hand-written",
+    "level": "page"
+  },
+  {
+    "path": "pages[].sections[].collapsible",
+    "type": "boolean",
+    "default": null,
+    "description": "Show a collapse toggle.",
+    "descriptionSource": "hand-written",
+    "level": "page"
+  },
+  {
+    "path": "pages[].sections[].collapsed",
+    "type": "boolean",
+    "default": null,
+    "description": "Start collapsed.",
+    "descriptionSource": "hand-written",
+    "level": "page"
+  },
+  {
+    "path": "pages[].sections[].columns",
+    "type": "number | number[]",
+    "default": null,
+    "description": "Grid: a column count, or ratios like [2, 1]. Stacks on narrow screens.",
+    "descriptionSource": "jsdoc",
+    "level": "page"
+  },
+  {
+    "path": "pages[].sections[].items",
+    "type": "PageItem[]",
+    "default": null,
+    "description": "Components placed in this section's grid.",
+    "descriptionSource": "hand-written",
+    "level": "page"
+  },
+  {
+    "path": "pages[].sections[].items[].id",
+    "type": "string",
+    "default": null,
+    "description": "Stable id: keys the item's state and saved views; master and targets refer to it (default: page/section/index).",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table",
+      "chart",
+      "stat",
+      "kv",
+      "markdown",
+      "facets"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].title",
+    "type": "string",
+    "default": null,
+    "description": "Heading above the component.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table",
+      "chart",
+      "stat",
+      "kv",
+      "markdown",
+      "facets"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].span",
+    "type": "number",
+    "default": null,
+    "description": "Grid columns this item spans.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table",
+      "chart",
+      "stat",
+      "kv",
+      "markdown",
+      "facets"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].height",
+    "type": "number",
+    "default": null,
+    "description": "Height in px.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table",
+      "chart",
+      "stat",
+      "kv",
+      "markdown",
+      "facets"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].code",
+    "type": "boolean | string",
+    "default": null,
+    "description": "Wrap the item in a Preview / Code box: true = its own config as source, a string = that code.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table",
+      "chart",
+      "stat",
+      "kv",
+      "markdown",
+      "facets"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].label",
+    "type": "string",
+    "default": null,
+    "description": "Table: tab/title text. Stat: the tile label (default: the item title, else the table label).",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table",
+      "stat"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].key",
+    "type": "string",
+    "default": null,
+    "description": "Row id column (stable row keys).",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table",
+      "kv"
+    ],
+    "typeByComponent": {
+      "kv": "unknown"
+    }
+  },
+  {
+    "path": "pages[].sections[].items[].columns",
+    "type": "Record<string, ColumnConfig | string>",
+    "default": null,
+    "description": "Table: column settings for this placement. KV card: 1 or 2 columns of pairs.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table",
+      "kv"
+    ],
+    "typeByComponent": {
+      "kv": "1 | 2"
+    }
+  },
+  {
+    "path": "pages[].sections[].items[].computed",
+    "type": "Record<string, ColumnConfig>",
+    "default": null,
+    "description": "Computed columns: name → column config with value(row). Same as a `columns` entry whose name is not in the data.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].columnOrder",
+    "type": "string[]",
+    "default": null,
+    "description": "Columns listed here come first, the rest follow in data order.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].include",
+    "type": "string[]",
+    "default": null,
+    "description": "Only these columns (plus computed ones).",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].exclude",
+    "type": "string[]",
+    "default": null,
+    "description": "Columns to leave out. (This placement only.)",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].defaultSort",
+    "type": "SortConfig[]",
+    "default": null,
+    "description": "Initial sort: \"col\" (asc), \"-col\" (desc) or { column, direction }. (This placement only.)",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].defaultFilters",
+    "type": "FilterConfig[]",
+    "default": null,
+    "description": "Initial filters: { column, operator?, value }. (This placement only.)",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].pageSize",
+    "type": "number",
+    "default": null,
+    "description": "Rows per page for this table. (This placement only.)",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].search",
+    "type": "false | { columns: string[] }",
+    "default": null,
+    "description": "false = no search box; { columns } = search only these.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].filters",
+    "type": "false",
+    "default": null,
+    "description": "false = no filter button.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].views",
+    "type": "false | ViewsConfig",
+    "default": null,
+    "description": "Saved views for this table (false = off). (This placement only.)",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].rowClass",
+    "type": "RowFn<Row, string>",
+    "default": null,
+    "description": "Extra CSS class for a row, from the row. (This placement only.)",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].onRowClick",
+    "type": "RowFn<Row, void>",
+    "default": null,
+    "description": "Called with the row when a row is clicked. (This placement only.)",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].expand",
+    "type": "false | \"inline\" | \"drawer\" | { relation: string }",
+    "default": "\"inline\" when `detail` is set",
+    "description": "Row expansion: inline detail panel (chevron column), the drawer, or off. Default: \"inline\" when `detail` is set.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].detail",
+    "type": "DetailConfig",
+    "default": null,
+    "description": "What the expanded row shows. Without `fields`: every column hidden in the table.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].groupBy",
+    "type": "string | string[]",
+    "default": null,
+    "description": "Group rows by one or more columns (collapsible group rows).",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table",
+      "chart"
+    ],
+    "typeByComponent": {
+      "chart": "string | RowFn<Row, unknown>"
+    }
+  },
+  {
+    "path": "pages[].sections[].items[].groupAggregates",
+    "type": "Record<string, GroupAggregate>",
+    "default": null,
+    "description": "Aggregates shown in each group row, per column.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].quickFilters",
+    "type": "QuickFilterConfig[]",
+    "default": null,
+    "description": "One-row filter strip above the table, synced with the filter pills.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].selectable",
+    "type": "boolean",
+    "default": null,
+    "description": "Checkbox column + selection bar (copy / clear).",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].density",
+    "type": "Density",
+    "default": null,
+    "description": "Row height: compact (28px, default) or comfortable (36px). Overrides the global setting.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].rowActions",
+    "type": "RowActionConfig[]",
+    "default": null,
+    "description": "Extra right-click menu items. `rows` = the selected rows (or just this row).",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].component",
+    "type": "\"table\"",
+    "default": null,
+    "description": "Component kind: table, chart, stat, kv, markdown or facets.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table",
+      "chart",
+      "stat",
+      "kv",
+      "markdown",
+      "facets"
+    ],
+    "typeByComponent": {
+      "chart": "\"chart\"",
+      "stat": "\"stat\"",
+      "kv": "\"kv\"",
+      "markdown": "\"markdown\"",
+      "facets": "\"facets\""
+    }
+  },
+  {
+    "path": "pages[].sections[].items[].table",
+    "type": "string",
+    "default": null,
+    "description": "The dataset (a name in tables / data).",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table",
+      "chart",
+      "stat",
+      "kv",
+      "facets"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].export",
+    "type": "boolean",
+    "default": null,
+    "description": "false hides the CSV/JSON export button (default: shown).",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].facets",
+    "type": "string[]",
+    "default": null,
+    "description": "Columns shown in a count-per-value sidebar next to the table.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].master",
+    "type": "string",
+    "default": null,
+    "description": "Master–detail: the id of a table item on this page; selecting rows there filters this table to related rows.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].via",
+    "type": "string",
+    "default": "any relation between the tables",
+    "description": "Which relation links the two (its label); default: any relation between the tables.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].whenEmpty",
+    "type": "\"all\" | \"none\"",
+    "default": null,
+    "description": "With nothing selected in the master: show all rows (default) or none.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "table"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].bucket",
+    "type": "TimeBucket",
+    "default": null,
+    "description": "Bucket the groupBy values as dates.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "chart"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].measure",
+    "type": "Measure",
+    "default": null,
+    "description": "\"count\" (default), \"sum:col\", \"avg:col\", \"min:col\", \"max:col\", \"distinct:col\" or { op, field }.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "chart",
+      "stat"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].measure.op",
+    "type": "MeasureOp",
+    "default": null,
+    "description": "count, sum, avg, min, max or distinct.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].measure.field",
+    "type": "string",
+    "default": null,
+    "description": "Column the measure reads.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].where",
+    "type": "Where",
+    "default": null,
+    "description": "Only rows matching: { col: value | [values] | { op, value } }.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "chart",
+      "stat"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].where.<key>",
+    "type": "WhereClause",
+    "default": null,
+    "description": "A value (is), an array (is any of) or { op, value, type }.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].where.<key>.op",
+    "type": "FilterOperator",
+    "default": null,
+    "description": "A filter operator (eq, gt, contains, between, …).",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].where.<key>.value",
+    "type": "unknown",
+    "default": null,
+    "description": "Value to compare with.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].where.<key>.type",
+    "type": "FilterFieldType",
+    "default": null,
+    "description": "Comparison type when the guess is wrong (number, date, text).",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].sort",
+    "type": "SortSpec",
+    "default": null,
+    "description": "Chart order: \"-value\" (default for categories), \"value\", \"key\", \"-key\" or an explicit value list.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "chart"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].top",
+    "type": "number",
+    "default": null,
+    "description": "Keep the first N keys after sorting and fold the rest into \"Other\". Ignored for time buckets.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "chart"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].topSeries",
+    "type": "number",
+    "default": null,
+    "description": "Same for series.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "chart"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].fill",
+    "type": "boolean",
+    "default": "true when `bucket` is set",
+    "description": "Fill missing time buckets with 0 (default true when `bucket` is set).",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "chart"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].type",
+    "type": "ChartType",
+    "default": null,
+    "description": "Chart type: bar, stacked, grouped, line, area, pie, donut or sparkline.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "chart"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].horizontal",
+    "type": "boolean",
+    "default": null,
+    "description": "bar / stacked / grouped: draw bars left-to-right with labels on the left (best for long labels).",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "chart"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].colors",
+    "type": "Record<string, string>",
+    "default": null,
+    "description": "Value or series → colour (hex or a token name: s1…s8, good, warning, serious, critical, other).",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "chart"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].legend",
+    "type": "boolean",
+    "default": null,
+    "description": "Hide the legend even with several series.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "chart"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].series",
+    "type": "string | RowFn<Row, unknown>",
+    "default": null,
+    "description": "Chart: second split (stacked/grouped bars, one line per value).",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "chart"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].targets",
+    "type": "string[]",
+    "default": null,
+    "description": "Item ids a click filters (default: tables of the same dataset on the page).",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "chart",
+      "facets"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].compare",
+    "type": "Where",
+    "default": null,
+    "description": "Compare against the same measure over rows matching this `where` (e.g. last period).",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "stat"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].compareLabel",
+    "type": "string",
+    "default": null,
+    "description": "Text after the delta, e.g. \"vs last week\".",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "stat"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].upIsGood",
+    "type": "boolean",
+    "default": "true",
+    "description": "Is a rise good (green) or bad (red)? Default true. Set false for counts of problems.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "stat"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].trend",
+    "type": "{ field: string; bucket?: TimeBucket; points?: number }",
+    "default": null,
+    "description": "Trend line: the measure per time bucket of a date field.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "stat"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].trend.field",
+    "type": "string",
+    "default": null,
+    "description": "Date column for the sparkline.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].trend.bucket",
+    "type": "TimeBucket",
+    "default": null,
+    "description": "day (default), week, month or year.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].trend.points",
+    "type": "number",
+    "default": null,
+    "description": "How many recent points to show (default 12).",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].hint",
+    "type": "string",
+    "default": null,
+    "description": "Shown under the value.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "stat"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].fields",
+    "type": "KVField[]",
+    "default": "every key of the row",
+    "description": "Which fields of `row` to show, in order. Default: every key of the row.",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "kv",
+      "facets"
+    ],
+    "typeByComponent": {
+      "facets": "string[]"
+    }
+  },
+  {
+    "path": "pages[].sections[].items[].fields[].field",
+    "type": "string",
+    "default": null,
+    "description": "Column to show.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].fields[].label",
+    "type": "string",
+    "default": null,
+    "description": "Label (default: the column label).",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].fields[].type",
+    "type": "ColumnType",
+    "default": null,
+    "description": "Format the value as this column type.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].aggregates",
+    "type": "{ label: string; measure: Measure; where?: Where }[]",
+    "default": null,
+    "description": "Aggregates over `rows` instead of (or as well as) one row: label → measure (+ optional where).",
+    "descriptionSource": "jsdoc",
+    "level": "item",
+    "components": [
+      "kv"
+    ]
+  },
+  {
+    "path": "pages[].sections[].items[].aggregates[].label",
+    "type": "string",
+    "default": null,
+    "description": "Label of the aggregate pair.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].aggregates[].measure",
+    "type": "Measure",
+    "default": null,
+    "description": "Same as the measure key.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].aggregates[].where",
+    "type": "Where",
+    "default": null,
+    "description": "Same as the where key.",
+    "descriptionSource": "hand-written",
+    "level": "item"
+  },
+  {
+    "path": "pages[].sections[].items[].text",
+    "type": "string",
+    "default": null,
+    "description": "Markdown text.",
+    "descriptionSource": "hand-written",
+    "level": "item",
+    "components": [
+      "markdown"
+    ]
+  },
+  {
+    "path": "pages[].sections[].sections",
+    "type": "SectionConfig[]",
+    "default": null,
+    "description": "Nested sections.",
+    "descriptionSource": "hand-written",
+    "level": "page"
+  },
+  {
+    "path": "pages[].sections[].tabs",
+    "type": "boolean",
+    "default": null,
+    "description": "Show the child sections as tabs.",
+    "descriptionSource": "jsdoc",
+    "level": "page"
+  },
+  {
+    "path": "nav",
+    "type": "\"tabs\" | \"sidebar\"",
+    "default": null,
+    "description": "Page navigation style.",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "editable",
+    "type": "boolean",
+    "default": "true when `pages` is set",
+    "description": "Allow drag-and-drop layout editing (default true when `pages` is set).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "themeToggle",
+    "type": "boolean",
+    "default": "false: the page theme is site-wide, see JsonDeck.setTheme",
+    "description": "Show a theme toggle in this deck (default false: the page theme is site-wide, see JsonDeck.setTheme).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "toolbarLabels",
+    "type": "boolean",
+    "default": "false: icons + tooltips",
+    "description": "Show text labels next to the toolbar icons (default false: icons + tooltips).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  },
+  {
+    "path": "density",
+    "type": "Density",
+    "default": null,
+    "description": "Row height for every table: compact (28px, default) or comfortable (36px).",
+    "descriptionSource": "jsdoc",
+    "level": "global"
+  }
+]

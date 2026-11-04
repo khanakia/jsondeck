@@ -1,0 +1,1259 @@
+[
+  {
+    "id": "zero-config",
+    "name": "Zero-config tables",
+    "category": "Tables",
+    "summary": "Pass only the data: every named array becomes a table with guessed types, labels, filters, sort and paging.",
+    "config": "data",
+    "example": "ex-zero",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "data-source",
+    "name": "Data from an object or a JSON script tag",
+    "category": "Tables",
+    "summary": "data takes an object of named arrays, one array, or the selector of a <script type=\"application/json\"> tag.",
+    "config": "data",
+    "example": "ex-zero",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "multi-table-tabs",
+    "name": "One tab per table",
+    "category": "Tables",
+    "summary": "Without pages, each table gets its own tab with its row count.",
+    "config": "tableOrder",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "table-order",
+    "name": "Tab order",
+    "category": "Tables",
+    "summary": "tableOrder lists tables first; the rest follow in data order.",
+    "config": "tableOrder",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "table-label",
+    "name": "Table labels",
+    "category": "Tables",
+    "summary": "Set the tab and title text of a table.",
+    "config": "tables.<table>.label",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "table-hidden",
+    "name": "Hide a table",
+    "category": "Tables",
+    "summary": "hidden: true drops a table from the deck.",
+    "config": "tables.<table>.hidden",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "row-key",
+    "name": "Stable row keys",
+    "category": "Tables",
+    "summary": "key names the column that identifies a row, for stable selection and relations.",
+    "config": "tables.<table>.key",
+    "example": "ex-columns",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "pagination",
+    "name": "Real pagination",
+    "category": "Tables",
+    "summary": "First/prev/numbered pages/next/last with a \"1–50 of N\" range; never a show-more button.",
+    "config": "pageSize",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "page-size",
+    "name": "Page size and choices",
+    "category": "Tables",
+    "summary": "Set the default rows per page globally or per table, and the choices in the picker.",
+    "config": "pageSize, pageSizes, tables.<table>.pageSize",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "global-search",
+    "name": "Global search",
+    "category": "Tables",
+    "summary": "A search box filters rows across searchable columns; limit it to some columns or turn it off.",
+    "config": "tables.<table>.search",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "search-skip-column",
+    "name": "Leave a column out of search",
+    "category": "Tables",
+    "summary": "search: false on a column keeps it out of the global search.",
+    "config": "tables.<table>.columns.<column>.search",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "export",
+    "name": "CSV / JSON export",
+    "category": "Tables",
+    "summary": "The export menu downloads the current page or all matching rows as CSV, or all matching rows as JSON; export: false hides it on a placed table.",
+    "config": "pages[].sections[].items[].export",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "density",
+    "name": "Row density",
+    "category": "Tables",
+    "summary": "compact (28px rows, default) or comfortable (36px), globally or per table.",
+    "config": "density, tables.<table>.density",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "row-class",
+    "name": "Row classes",
+    "category": "Tables",
+    "summary": "rowClass(row) adds a CSS class to a row, e.g. to highlight critical rows.",
+    "config": "tables.<table>.rowClass",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "row-click",
+    "name": "Row click handler",
+    "category": "Tables",
+    "summary": "onRowClick(row) runs your code when a row is clicked.",
+    "config": "tables.<table>.onRowClick",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "empty-state",
+    "name": "Empty and no-results states",
+    "category": "Tables",
+    "summary": "An empty table and a filter with no matches each show a message with a clear-filters action.",
+    "config": "labels",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "config-errors",
+    "name": "Config errors with suggestions",
+    "category": "Tables",
+    "summary": "Unknown keys and bad values are listed with a \"did you mean\" hint; everything valid still renders, and mount() returns the issues.",
+    "config": "data",
+    "example": "ex-errors",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "type-guessing",
+    "name": "Column type guessing",
+    "category": "Columns & types",
+    "summary": "Types are guessed from the data: number, date, datetime, URL, IP, email, boolean, enum, JSON, long text, text.",
+    "config": "guess",
+    "example": "ex-zero",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "guess-tuning",
+    "name": "Tune the guesser",
+    "category": "Columns & types",
+    "summary": "Change the enum limits, long-text length, sample size and the known value orders.",
+    "config": "guess.enumMaxDistinct, guess.enumMaxRatio, guess.enumMaxLen, guess.longTextLen, guess.sampleSize, guess.knownOrders",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "custom-detector",
+    "name": "Custom type detectors",
+    "category": "Columns & types",
+    "summary": "A detector claims a column when its test passes on the sample values; it runs before the built-in checks.",
+    "config": "guess.detectors",
+    "example": "ex-types",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "custom-type",
+    "name": "Register a column type",
+    "category": "Columns & types",
+    "summary": "types.<name> adds a type (or replaces a built-in one) with its renderer, filter, sort, alignment, format and width.",
+    "config": "types.<type>",
+    "example": "ex-types",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "type-override",
+    "name": "Set a column's type",
+    "category": "Columns & types",
+    "summary": "type picks a built-in type, an alias (badge, object, string) or a registered type; a string shorthand works too.",
+    "config": "tables.<table>.columns.<column>.type",
+    "example": "ex-columns",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "column-label",
+    "name": "Column labels",
+    "category": "Columns & types",
+    "summary": "Header text; the default is the key humanized, with known acronyms in capitals.",
+    "config": "tables.<table>.columns.<column>.label, acronyms",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "acronyms",
+    "name": "Acronyms in labels",
+    "category": "Columns & types",
+    "summary": "acronyms replaces the list of words shown in capitals in generated labels (ID, IP, URL, …).",
+    "config": "acronyms",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "column-order",
+    "name": "Column order",
+    "category": "Columns & types",
+    "summary": "columnOrder puts some columns first; the rest follow in data order.",
+    "config": "tables.<table>.columnOrder",
+    "example": "ex-columns",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "include-exclude",
+    "name": "Include / exclude columns",
+    "category": "Columns & types",
+    "summary": "include keeps only some columns; exclude drops some.",
+    "config": "tables.<table>.include, tables.<table>.exclude",
+    "example": "ex-computed",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "column-hidden",
+    "name": "Hidden columns",
+    "category": "Columns & types",
+    "summary": "Hide a column; users can show it again from the Columns menu.",
+    "config": "tables.<table>.columns.<column>.hidden",
+    "example": "ex-expand",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "column-visibility-menu",
+    "name": "Columns menu",
+    "category": "Columns & types",
+    "summary": "Show or hide columns from the toolbar (shortcut C), with an In-detail toggle per column.",
+    "config": "tables.<table>.columns.<column>.hidden",
+    "example": "ex-expand",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "column-width",
+    "name": "Width and min width",
+    "category": "Columns & types",
+    "summary": "Set a column's width and the smallest width when resizing.",
+    "config": "tables.<table>.columns.<column>.width, tables.<table>.columns.<column>.minWidth",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "column-resize",
+    "name": "Resize columns",
+    "category": "Columns & types",
+    "summary": "Drag a header edge to resize a column.",
+    "config": "tables.<table>.columns.<column>.minWidth",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable",
+    "checkReason": "Resize hook exists in src/sdt/columns/useColumnResize.ts; confirm it is wired for every table."
+  },
+  {
+    "id": "column-reorder",
+    "name": "Reorder columns by drag",
+    "category": "Columns & types",
+    "summary": "Drag a header to move a column.",
+    "config": "tables.<table>.columnOrder",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable",
+    "checkReason": "The ported table has enableColumnReorder; confirm it is on in jsondeck tables."
+  },
+  {
+    "id": "column-pin",
+    "name": "Pinned columns",
+    "category": "Columns & types",
+    "summary": "Pin a column to the left or right edge so it stays visible while scrolling.",
+    "config": "tables.<table>.columns.<column>.pin",
+    "example": "ex-columns",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "column-align",
+    "name": "Alignment",
+    "category": "Columns & types",
+    "summary": "left, center or right alignment for a column's cells.",
+    "config": "tables.<table>.columns.<column>.align",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "column-wrap",
+    "name": "Wrap long text",
+    "category": "Columns & types",
+    "summary": "wrap: true wraps text instead of truncating it.",
+    "config": "tables.<table>.columns.<column>.wrap",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "column-tooltip",
+    "name": "Cell tooltips",
+    "category": "Columns & types",
+    "summary": "tooltip: true shows the full cell text; a function returns your own text.",
+    "config": "tables.<table>.columns.<column>.tooltip",
+    "example": "ex-columns",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "column-class",
+    "name": "Column class",
+    "category": "Columns & types",
+    "summary": "className adds a CSS class to the column's cells.",
+    "config": "tables.<table>.columns.<column>.className",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "badges",
+    "name": "Badges and colours",
+    "category": "Columns & types",
+    "summary": "Enum columns render as badges; colors maps values to tone names (red, green, …) or any CSS colour.",
+    "config": "tables.<table>.columns.<column>.colors",
+    "example": "ex-columns",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "enum-order",
+    "name": "Value order",
+    "category": "Columns & types",
+    "summary": "order sets how enum values sort and list in the filter; severity and p0–p4 orders are known.",
+    "config": "tables.<table>.columns.<column>.order, guess.knownOrders",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "link-template",
+    "name": "Link templates",
+    "category": "Columns & types",
+    "summary": "link fills a URL template like https://x/{id} from the row, or a function returns the URL.",
+    "config": "tables.<table>.columns.<column>.link",
+    "example": "ex-columns",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "computed-column",
+    "name": "Computed columns",
+    "category": "Columns & types",
+    "summary": "A column not in the data plus value(row) creates a new column; computed does the same as a separate map.",
+    "config": "tables.<table>.columns.<column>.value, tables.<table>.computed",
+    "example": "ex-computed",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "formats",
+    "name": "Named formats",
+    "category": "Columns & types",
+    "summary": "number:2, currency:EUR, percent, bytes, relative, date, datetime, json, upper, lower.",
+    "config": "tables.<table>.columns.<column>.format",
+    "example": "ex-computed",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "custom-formats",
+    "name": "Custom formats",
+    "category": "Columns & types",
+    "summary": "formats adds or replaces named formats; a column format can also be a function.",
+    "config": "formats",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "custom-render",
+    "name": "Custom cell renderer",
+    "category": "Columns & types",
+    "summary": "render returns text, a DOM node (you own its safety) or a React element (ESM).",
+    "config": "tables.<table>.columns.<column>.render",
+    "example": "ex-types",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "type-renderers",
+    "name": "Replace a type's renderer",
+    "category": "Columns & types",
+    "summary": "renderers.<type> swaps the renderer for every column of a type.",
+    "config": "renderers",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "filter-pills",
+    "name": "Filter pills",
+    "category": "Filters",
+    "summary": "Add filters from the Filter button (shortcut F); each shows as a pill you can edit or remove.",
+    "config": "tables.<table>.columns.<column>.filter",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "filter-kinds",
+    "name": "Filter controls per type",
+    "category": "Filters",
+    "summary": "text, number, boolean, select, multi-select, date and date-range controls, picked from the column type.",
+    "config": "tables.<table>.columns.<column>.filter",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "filter-operators",
+    "name": "Operators",
+    "category": "Filters",
+    "summary": "Text: contains, is, starts/ends with, empty; number: =, ≠, >, ≥, <, ≤, between, empty; select: is / is any of / is none of.",
+    "config": "tables.<table>.columns.<column>.filter.operators",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "filter-options",
+    "name": "Fixed filter options",
+    "category": "Filters",
+    "summary": "Give a select filter its own choices as strings or { value, label }.",
+    "config": "tables.<table>.columns.<column>.filter.options",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "filter-off",
+    "name": "Turn filters off",
+    "category": "Filters",
+    "summary": "filter: false on a column, or filters: false on a table, removes them.",
+    "config": "tables.<table>.columns.<column>.filter, tables.<table>.filters",
+    "example": "ex-columns",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "date-presets",
+    "name": "Date presets",
+    "category": "Filters",
+    "summary": "Date filters offer today, yesterday, month/quarter/year to date.",
+    "config": "tables.<table>.columns.<column>.filter",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "default-filters",
+    "name": "Default filters",
+    "category": "Filters",
+    "summary": "Filters applied when the table opens.",
+    "config": "tables.<table>.defaultFilters",
+    "example": "ex-views",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "quick-filters",
+    "name": "Quick filters",
+    "category": "Filters",
+    "summary": "A one-row strip of chips, a min/max range with a slider, a toggle or a search box, kept in sync with the pills.",
+    "config": "tables.<table>.quickFilters",
+    "example": "ex-quick",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "page-filters",
+    "name": "Page filter bar",
+    "category": "Filters",
+    "summary": "A page-level filter applies to every component that has that field.",
+    "config": "pages[].filters",
+    "example": "ex-filters",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "facets",
+    "name": "Facet sidebar",
+    "category": "Filters",
+    "summary": "Count per value for chosen columns; click a value to filter.",
+    "config": "pages[].sections[].items[].facets, pages[].sections[].items[].fields",
+    "example": "ex-facets",
+    "since": "0.1.0",
+    "status": "stable",
+    "checkReason": "Facets exist as a table option and as a component; no examples.html box shows them yet."
+  },
+  {
+    "id": "click-to-filter",
+    "name": "Click a chart to filter",
+    "category": "Filters",
+    "summary": "Clicking a bar or slice filters the tables of the same dataset on the page (or the listed targets).",
+    "config": "pages[].sections[].items[].targets",
+    "example": "ex-filters",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "sort-header",
+    "name": "Sort from the header",
+    "category": "Sorting & grouping",
+    "summary": "Each header's menu sorts ascending, descending or clears the sort.",
+    "config": "tables.<table>.columns.<column>.sort",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "multi-sort",
+    "name": "Multi-column sort",
+    "category": "Sorting & grouping",
+    "summary": "The Sort menu (shortcut S) stacks several sort rules.",
+    "config": "tables.<table>.defaultSort",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "default-sort",
+    "name": "Default sort",
+    "category": "Sorting & grouping",
+    "summary": "\"col\" sorts ascending, \"-col\" descending, or { column, direction }.",
+    "config": "tables.<table>.defaultSort",
+    "example": "ex-columns",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "custom-comparator",
+    "name": "Custom comparator",
+    "category": "Sorting & grouping",
+    "summary": "sort: (a, b) => number compares raw values; sort: false makes a column unsortable.",
+    "config": "tables.<table>.columns.<column>.sort",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "group-by",
+    "name": "Group rows",
+    "category": "Sorting & grouping",
+    "summary": "Group rows by one or more columns into collapsible group rows; users can change it from the Group by button.",
+    "config": "tables.<table>.groupBy",
+    "example": "ex-group",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "group-aggregates",
+    "name": "Group subtotals",
+    "category": "Sorting & grouping",
+    "summary": "Each group row shows count, sum, avg, min or max per column.",
+    "config": "tables.<table>.groupAggregates",
+    "example": "ex-group",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "saved-views",
+    "name": "Saved views",
+    "category": "Views",
+    "summary": "Save the current filters, sort and columns as a named view from the views menu (shortcut V); stored in this browser.",
+    "config": "views, tables.<table>.views",
+    "example": "ex-views",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "view-favorites",
+    "name": "Favorite, pin and default views",
+    "category": "Views",
+    "summary": "Views can be favorited, pinned, set as default, updated or deleted.",
+    "config": "views",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "view-storage",
+    "name": "Pluggable view storage",
+    "category": "Views",
+    "summary": "views.storage plugs in your own store (list/get/save/delete/setDefault/setFavorite); default is localStorage.",
+    "config": "views.storage",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "views-off",
+    "name": "Turn views off",
+    "category": "Views",
+    "summary": "views: false globally or per table.",
+    "config": "views, tables.<table>.views",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "pages",
+    "name": "Pages",
+    "category": "Layout & pages",
+    "summary": "pages adds several pages, each with sections; the current page lives in the URL hash.",
+    "config": "pages",
+    "example": "ex-pages",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "nav-style",
+    "name": "Tabs or sidebar navigation",
+    "category": "Layout & pages",
+    "summary": "nav picks page tabs or a sidebar.",
+    "config": "nav",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "sections",
+    "name": "Sections",
+    "category": "Layout & pages",
+    "summary": "Sections have a title, a description, and can be collapsible, nested or shown as tabs.",
+    "config": "pages[].sections, pages[].sections[].collapsible, pages[].sections[].tabs",
+    "example": "ex-pages",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "grid",
+    "name": "Grid layout",
+    "category": "Layout & pages",
+    "summary": "A section's columns is a count or ratios like [2, 1]; it stacks on narrow screens.",
+    "config": "pages[].sections[].columns",
+    "example": "ex-pages",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "item-size",
+    "name": "Item span and height",
+    "category": "Layout & pages",
+    "summary": "span sets how many grid columns an item takes; height sets its height.",
+    "config": "pages[].sections[].items[].span, pages[].sections[].items[].height",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "placement-overrides",
+    "name": "Per-placement table settings",
+    "category": "Layout & pages",
+    "summary": "A table placed on a page can override any table setting just for that spot.",
+    "config": "pages[].sections[].items[].table",
+    "example": "ex-filters",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "layout-editor",
+    "name": "Layout editing",
+    "category": "Layout & pages",
+    "summary": "Edit layout: drag items, change width and height, add or remove components, reset, then Copy config.",
+    "config": "editable",
+    "example": "ex-editing",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "code-box",
+    "name": "Preview / Code boxes",
+    "category": "Layout & pages",
+    "summary": "code: true wraps an item in a Preview / Code box showing its config; JsonDeck.example() does it for a whole deck.",
+    "config": "pages[].sections[].items[].code",
+    "example": "ex-pages",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-bar",
+    "name": "Bar charts",
+    "category": "Charts",
+    "summary": "Vertical or horizontal bars of a count or measure per value.",
+    "config": "pages[].sections[].items[].type, pages[].sections[].items[].horizontal",
+    "example": "ex-bars",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-stacked-grouped",
+    "name": "Stacked and grouped bars",
+    "category": "Charts",
+    "summary": "Split each bar by a second column, stacked or side by side.",
+    "config": "pages[].sections[].items[].series",
+    "example": "ex-bars",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-line-area",
+    "name": "Line and area charts",
+    "category": "Charts",
+    "summary": "Values over time buckets (day, week, month, year), one line per series value.",
+    "config": "pages[].sections[].items[].bucket",
+    "example": "ex-lines",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-pie-donut",
+    "name": "Pie and donut charts",
+    "category": "Charts",
+    "summary": "Share per value, with a legend of counts and percents; the donut shows the total.",
+    "config": "pages[].sections[].items[].type",
+    "example": "ex-pies",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-sparkline",
+    "name": "Sparklines",
+    "category": "Charts",
+    "summary": "A small line without axes, also used inside stat tiles.",
+    "config": "pages[].sections[].items[].type",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-measures",
+    "name": "Measures",
+    "category": "Charts",
+    "summary": "count, sum, avg, min, max or distinct count of a column.",
+    "config": "pages[].sections[].items[].measure",
+    "example": "ex-stats",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-where",
+    "name": "Chart filters",
+    "category": "Charts",
+    "summary": "where keeps only matching rows, with the same operators as table filters.",
+    "config": "pages[].sections[].items[].where",
+    "example": "ex-stats",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-top-n",
+    "name": "Top N and Other",
+    "category": "Charts",
+    "summary": "top keeps the first N values and folds the rest into Other; topSeries does the same for series.",
+    "config": "pages[].sections[].items[].top, pages[].sections[].items[].topSeries",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-sort",
+    "name": "Chart order",
+    "category": "Charts",
+    "summary": "Sort by value, by label, or by an explicit list (severity order is used automatically).",
+    "config": "pages[].sections[].items[].sort",
+    "example": "ex-bars",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-colors",
+    "name": "Chart colours",
+    "category": "Charts",
+    "summary": "A validated colour-blind-safe palette in light and dark; severity values get status colours; colors overrides per value.",
+    "config": "pages[].sections[].items[].colors",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-tooltip-legend",
+    "name": "Tooltips and legends",
+    "category": "Charts",
+    "summary": "Hover shows a tooltip; charts with several series show a legend.",
+    "config": "pages[].sections[].items[].legend",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-follows-filters",
+    "name": "Charts follow table filters",
+    "category": "Charts",
+    "summary": "Charts on a page react to the page filter bar.",
+    "config": "pages[].filters",
+    "example": "ex-filters",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "stat-tile",
+    "name": "Stat tiles",
+    "category": "Widgets",
+    "summary": "One headline number from a measure, with an optional where.",
+    "config": "pages[].sections[].items[].measure, pages[].sections[].items[].where",
+    "example": "ex-stats",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "stat-delta",
+    "name": "Stat delta",
+    "category": "Widgets",
+    "summary": "compare shows the change against a second where, coloured by whether up is good.",
+    "config": "pages[].sections[].items[].compare, pages[].sections[].items[].upIsGood, pages[].sections[].items[].compareLabel",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "stat-trend",
+    "name": "Stat trend",
+    "category": "Widgets",
+    "summary": "trend adds a sparkline of the measure per time bucket.",
+    "config": "pages[].sections[].items[].trend",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "kv-card",
+    "name": "Key-value card",
+    "category": "Widgets",
+    "summary": "One row (picked by key) or a set of aggregates shown as label/value pairs, using the column formats.",
+    "config": "pages[].sections[].items[].key, pages[].sections[].items[].fields, pages[].sections[].items[].aggregates",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "markdown",
+    "name": "Markdown blocks",
+    "category": "Widgets",
+    "summary": "Headings, lists, links, code, quotes and tables; raw HTML is shown as text and unsafe links are dropped.",
+    "config": "pages[].sections[].items[].text",
+    "example": "ex-pages",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "relations",
+    "name": "Relations between tables",
+    "category": "Relations & drill-down",
+    "summary": "{ from: 'findings.host', to: 'hosts.ip' } turns cell values into links to the related row; arrays work (many-to-many).",
+    "config": "relations",
+    "example": "ex-relations",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "row-drawer",
+    "name": "Row drawer",
+    "category": "Relations & drill-down",
+    "summary": "Clicking a row opens a drawer with all its fields and its related rows in both directions.",
+    "config": "relations",
+    "example": "ex-relations",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "expand-inline",
+    "name": "Expandable rows",
+    "category": "Relations & drill-down",
+    "summary": "A chevron (or Enter) expands a row into a detail panel; without fields it shows the hidden columns.",
+    "config": "tables.<table>.expand, tables.<table>.detail",
+    "example": "ex-expand",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "detail-fields",
+    "name": "Detail panel fields",
+    "category": "Relations & drill-down",
+    "summary": "Pick the fields and grid columns (1–4) of the detail panel, or render it yourself.",
+    "config": "tables.<table>.detail.fields, tables.<table>.detail.columns, tables.<table>.detail.render",
+    "example": "ex-expand",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "nested-drilldown",
+    "name": "Nested drill-down",
+    "category": "Relations & drill-down",
+    "summary": "detail.related shows related rows as nested tables that expand again (depth-limited).",
+    "config": "tables.<table>.detail.related",
+    "example": "ex-drilldown",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "expand-relation",
+    "name": "Expand into a relation",
+    "category": "Relations & drill-down",
+    "summary": "expand: { relation } expands a row straight into the rows of one relation.",
+    "config": "tables.<table>.expand.relation",
+    "example": "ex-expand-relation",
+    "since": "0.1.0",
+    "status": "stable",
+    "checkReason": "Type exists in config.ts; no example box uses it."
+  },
+  {
+    "id": "expand-drawer",
+    "name": "Expand into the drawer",
+    "category": "Relations & drill-down",
+    "summary": "expand: \"drawer\" opens the drawer instead of an inline panel; false turns expansion off.",
+    "config": "tables.<table>.expand",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "master-detail",
+    "name": "Master–detail",
+    "category": "Relations & drill-down",
+    "summary": "Selecting rows in one table filters another to the related rows, with a chip to clear.",
+    "config": "pages[].sections[].items[].master, pages[].sections[].items[].via, pages[].sections[].items[].whenEmpty",
+    "example": "ex-master",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "row-selection",
+    "name": "Row selection",
+    "category": "Selection & copy",
+    "summary": "selectable adds a checkbox column; shift-click selects a range.",
+    "config": "tables.<table>.selectable",
+    "example": "ex-select",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "copy-formats",
+    "name": "Copy rows",
+    "category": "Selection & copy",
+    "summary": "Copy the selected rows as JSON, CSV, TSV (pastes into Sheets/Excel), a Markdown table or key: value text.",
+    "config": "tables.<table>.selectable",
+    "example": "ex-select",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "context-menu",
+    "name": "Right-click menu",
+    "category": "Selection & copy",
+    "summary": "Right-click a row or cell for more actions, including copy and your own row actions; the menu works with the keyboard.",
+    "config": "tables.<table>.rowActions",
+    "example": "ex-select",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "row-actions",
+    "name": "Custom row actions",
+    "category": "Selection & copy",
+    "summary": "rowActions adds your own items to the right-click menu; they get the row and the selected rows.",
+    "config": "tables.<table>.rowActions",
+    "example": "ex-select",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "toasts",
+    "name": "Copy feedback",
+    "category": "Selection & copy",
+    "summary": "A small toast confirms a copy (or says it failed).",
+    "config": null,
+    "example": "ex-select",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "theme",
+    "name": "Light and dark",
+    "category": "Theming",
+    "summary": "Every deck follows the page theme (html data-theme or class=\"dark\", else the OS); theme can pin one deck.",
+    "config": "theme",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "set-theme",
+    "name": "JsonDeck.setTheme",
+    "category": "Theming",
+    "summary": "setTheme(\"light\" | \"dark\" | \"auto\") switches every deck on the page and remembers the choice.",
+    "config": "theme",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "theme-toggle",
+    "name": "Theme toggle button",
+    "category": "Theming",
+    "summary": "themeToggle shows a light/dark switch in the deck's toolbar.",
+    "config": "themeToggle",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "css-variables",
+    "name": "CSS colour tokens",
+    "category": "Theming",
+    "summary": "Colours are CSS variables on .jd-root (--jds-* for the UI, --jdv-* for charts), so a stylesheet can re-theme them.",
+    "config": null,
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable",
+    "checkReason": "Variable names may change while the theming work is in progress."
+  },
+  {
+    "id": "labels-i18n",
+    "name": "Every UI string",
+    "category": "Theming",
+    "summary": "labels replaces any UI text; templates use {from} {to} {total} {n} {shown} {table}.",
+    "config": "labels",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "toolbar-labels",
+    "name": "Toolbar text labels",
+    "category": "Theming",
+    "summary": "toolbarLabels shows text next to the toolbar icons (default: icons with tooltips).",
+    "config": "toolbarLabels",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "define-config",
+    "name": "defineConfig",
+    "category": "TypeScript",
+    "summary": "defineConfig(data, config) checks table and column names against your data and types row callbacks.",
+    "config": null,
+    "example": "ex-typed",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "typed-exports",
+    "name": "Exported types",
+    "category": "TypeScript",
+    "summary": "Every config type is exported (JsonDeckConfig, TableConfig, ColumnConfig, PageConfig, …) plus helper types.",
+    "config": null,
+    "example": "ex-typed",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "describe",
+    "name": "JsonDeck.describe",
+    "category": "TypeScript",
+    "summary": "describe(data, config) returns the fully resolved config as JSON in the same shape: copy it, edit what is wrong, pass it back.",
+    "config": null,
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "cdn-script",
+    "name": "One script tag",
+    "category": "Build & CDN",
+    "summary": "dist/jsondeck.js (React bundled, global JsonDeck) plus dist/jsondeck.css.",
+    "config": null,
+    "example": "ex-zero",
+    "since": "0.1.0",
+    "status": "check",
+    "checkReason": "Not published to npm/jsdelivr yet; the CDN URL is the planned one."
+  },
+  {
+    "id": "esm-build",
+    "name": "ES module build",
+    "category": "Build & CDN",
+    "summary": "dist/jsondeck.mjs with react and react-dom as peer dependencies, plus .d.ts types.",
+    "config": null,
+    "example": "ex-typed",
+    "since": "0.1.0",
+    "status": "check",
+    "checkReason": "Not published to npm yet."
+  },
+  {
+    "id": "file-protocol",
+    "name": "Works from file://",
+    "category": "Build & CDN",
+    "summary": "No fetch and no network calls: a page with embedded data works opened from disk.",
+    "config": "data",
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "host-isolation",
+    "name": "Host page isolation",
+    "category": "Build & CDN",
+    "summary": "Prefixed classes and a reset scoped to the deck: the host page's CSS and jsondeck's never clash.",
+    "config": null,
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "mount-api",
+    "name": "JsonDeck.mount",
+    "category": "Build & CDN",
+    "summary": "mount(el, config) renders a deck and returns { unmount, issues }.",
+    "config": null,
+    "example": "ex-zero",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "example-api",
+    "name": "JsonDeck.example",
+    "category": "Build & CDN",
+    "summary": "example(el, { title, description, config }) renders a Preview / Code box with a generated HTML snippet.",
+    "config": null,
+    "example": "ex-zero",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "html-snippet",
+    "name": "htmlSnippet / toSource",
+    "category": "Build & CDN",
+    "summary": "Turn a config into source code or a full HTML page (CDN tags, trimmed data, mount call).",
+    "config": null,
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "shortcuts",
+    "name": "Keyboard shortcuts",
+    "category": "Accessibility & keyboard",
+    "summary": "/ search, F filter, S sort, V views, C columns, ←/→ pages, Esc clear, ? shortcuts help.",
+    "config": null,
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "shortcuts-help",
+    "name": "Shortcuts help",
+    "category": "Accessibility & keyboard",
+    "summary": "? opens a dialog listing the shortcuts.",
+    "config": null,
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "row-keyboard",
+    "name": "Row keyboard",
+    "category": "Accessibility & keyboard",
+    "summary": "Enter on a row expands it.",
+    "config": "tables.<table>.expand",
+    "example": "ex-expand",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "menu-keyboard",
+    "name": "Menu keyboard",
+    "category": "Accessibility & keyboard",
+    "summary": "Menus use arrows, Enter, Esc, ←/→ for submenus and typeahead.",
+    "config": null,
+    "example": "ex-select",
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "chart-a11y",
+    "name": "Accessible charts",
+    "category": "Accessibility & keyboard",
+    "summary": "Charts have role=img with a label, a hidden data table for screen readers, and focusable clickable bars.",
+    "config": null,
+    "example": null,
+    "since": "0.1.0",
+    "status": "stable"
+  },
+  {
+    "id": "toast-a11y",
+    "name": "Announced toasts",
+    "category": "Accessibility & keyboard",
+    "summary": "Toasts are announced politely to screen readers.",
+    "config": null,
+    "example": "ex-select",
+    "since": "0.1.0",
+    "status": "stable"
+  }
+]

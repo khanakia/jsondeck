@@ -1,0 +1,194 @@
+/*
+ * jsondeck styles. Host-safe by construction:
+ *  - every utility is prefixed (`jd:`), so no class name can clash;
+ *  - no global preflight: the reset below applies only inside `.jd-root`;
+ *  - utilities are `!important` and the scoped reset is class+element
+ *    specificity, so a host page's element styles (`td { padding: 20px }`)
+ *    cannot leak into the table.
+ */
+@import "tailwindcss/theme.css" prefix(jd);
+@import "tailwindcss/utilities.css" important;
+
+@source "./";
+
+@custom-variant dark (&:where(.jd-dark, .jd-dark *));
+
+/* Colour tokens (the names the table engine and its
+ * Base UI primitives use), driven by variables so dark mode is one class swap.
+ * `inline` makes utilities read var(--jds-*) at the element, not at :root
+ * (where these variables are not defined). */
+@theme inline {
+	--color-background: var(--jds-background);
+	--color-foreground: var(--jds-foreground);
+	--color-muted: var(--jds-muted);
+	--color-muted-foreground: var(--jds-muted-foreground);
+	--color-accent: var(--jds-accent);
+	--color-accent-foreground: var(--jds-accent-foreground);
+	--color-primary: var(--jds-primary);
+	--color-primary-foreground: var(--jds-primary-foreground);
+	--color-secondary: var(--jds-secondary);
+	--color-secondary-foreground: var(--jds-secondary-foreground);
+	--color-popover: var(--jds-popover);
+	--color-popover-foreground: var(--jds-popover-foreground);
+	--color-destructive: var(--jds-destructive);
+	--color-border: var(--jds-border);
+	--color-input: var(--jds-input);
+	--color-ring: var(--jds-ring);
+	--color-card: var(--jds-card);
+	--color-card-border: var(--jds-card-border);
+	--color-page: var(--jds-page);
+	--color-tabs: var(--jds-tabs);
+	--color-tabs-card: var(--jds-tabs-card);
+	--color-tab-badge: var(--jds-tab-badge);
+	/* Radii follow --jds-radius (controls rounded-md; cards rounded-lg one step up). */
+	--radius-sm: calc(var(--jds-radius) - 2px);
+	--radius-md: var(--jds-radius);
+	--radius-lg: calc(var(--jds-radius) + 2px);
+}
+
+.jd-root {
+	--jds-background: #ffffff;
+	--jds-foreground: #18181b;
+	--jds-muted: #f4f4f5;
+	--jds-muted-foreground: #71717a;
+	--jds-accent: #f4f4f5;
+	--jds-accent-foreground: #18181b;
+	--jds-primary: #18181b;
+	--jds-primary-foreground: #fafafa;
+	--jds-secondary: #f4f4f5;
+	--jds-secondary-foreground: #18181b;
+	--jds-popover: #ffffff;
+	--jds-popover-foreground: #18181b;
+	--jds-destructive: #dc2626;
+	/* Inner dividers (row lines, header bottom): one step lighter than the card border. */
+	--jds-border: #efeff1;
+	--jds-input: #e4e4e7;
+	--jds-ring: #a1a1aa;
+	/* Two surface levels: blocks (card) sit on the page. The root itself stays
+	   transparent so it shows the host page; --jds-page is for hosts/demos. */
+	--jds-page: #f4f4f5;
+	--jds-card: #ffffff;
+	/* Blocks separate from the page by a subtle 1px border only; no shadow by default. */
+	--jds-card-border: rgb(228 228 231 / 0.8);
+	--jds-card-shadow: none;
+	/* Segmented tabs: the pill on the page, the pill inside a card, and count badges. */
+	--jds-tabs: #e4e4e7;
+	--jds-tabs-card: #f4f4f5;
+	--jds-tab-badge: #d4d4d8;
+	/* Charts (dataviz reference palette, CVD-checked) and status colours. */
+	--jds-chart-1: #2a78d6;
+	--jds-chart-2: #eb6834;
+	--jds-chart-3: #1baf7a;
+	--jds-chart-4: #eda100;
+	--jds-chart-5: #e87ba4;
+	--jds-chart-6: #008300;
+	--jds-chart-7: #6250d6;
+	--jds-chart-8: #e34948;
+	--jds-chart-other: #b5b3ab;
+	--jds-good: #0ca30c;
+	--jds-warning: #fab219;
+	--jds-serious: #ec835a;
+	--jds-critical: #d03b3b;
+	--jds-up: #006300;
+	--jds-down: #b42828;
+	/* Shape and size. */
+	--jds-radius: 6px;
+	--jds-font-size: 13px;
+	--jds-row-height: 28px;
+	--jds-row-height-comfortable: 36px;
+	/* Sticky sidebar / table of contents sit this far from the top (a host header's height). */
+	--jds-sticky-top: 0px;
+	color-scheme: light;
+	background: transparent;
+	color: var(--jds-foreground);
+	font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	font-size: var(--jds-font-size);
+	line-height: 1.4;
+	text-align: left;
+	-webkit-font-smoothing: antialiased;
+}
+.jd-root.jd-dark {
+	/* Inside blocks the surface is zinc-900, so tables, inputs and popovers match the card. */
+	--jds-background: #18181b;
+	--jds-foreground: #fafafa;
+	--jds-muted: #27272a;
+	--jds-muted-foreground: #a1a1aa;
+	--jds-accent: #27272a;
+	--jds-accent-foreground: #fafafa;
+	--jds-primary: #fafafa;
+	--jds-primary-foreground: #18181b;
+	--jds-secondary: #27272a;
+	--jds-secondary-foreground: #fafafa;
+	--jds-popover: #18181b;
+	--jds-popover-foreground: #fafafa;
+	--jds-destructive: #ef4444;
+	--jds-border: rgb(39 39 42 / 0.6);
+	--jds-input: #27272a;
+	--jds-ring: #52525b;
+	--jds-page: #09090b;
+	--jds-card: #18181b;
+	--jds-card-border: rgb(39 39 42 / 0.7);
+	--jds-card-shadow: none;
+	--jds-tabs: #27272a;
+	--jds-tabs-card: #27272a;
+	--jds-tab-badge: #3f3f46;
+	--jds-chart-1: #3987e5;
+	--jds-chart-2: #d95926;
+	--jds-chart-3: #199e70;
+	--jds-chart-4: #c98500;
+	--jds-chart-5: #d55181;
+	--jds-chart-6: #008300;
+	--jds-chart-7: #9085e9;
+	--jds-chart-8: #e66767;
+	--jds-chart-other: #5f5e58;
+	--jds-up: #0ca30c;
+	--jds-down: #e66767;
+	color-scheme: dark;
+}
+
+/* Scoped reset (the parts of preflight we need), only inside the root. */
+.jd-root *,
+.jd-root *::before,
+.jd-root *::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	border: 0 solid;
+	border-color: var(--jds-border);
+}
+.jd-root button,
+.jd-root input,
+.jd-root select,
+.jd-root table,
+.jd-root th,
+.jd-root td {
+	font: inherit;
+	color: inherit;
+	letter-spacing: inherit;
+	background: transparent;
+	text-transform: none;
+	line-height: inherit;
+	box-shadow: none;
+	border-radius: 0;
+	width: auto;
+	height: auto;
+	min-height: 0;
+}
+.jd-root table {
+	border-collapse: separate;
+	text-indent: 0;
+}
+.jd-root a {
+	color: inherit;
+	text-decoration: inherit;
+}
+.jd-root svg {
+	display: block;
+	vertical-align: middle;
+}
+.jd-root select {
+	appearance: auto;
+}
+.jd-root kbd {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

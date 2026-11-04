@@ -1,0 +1,60 @@
+{
+  "name": "jsondeck",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build && vite build -c vite.esm.config.ts && node scripts/make-full.mjs && rm -rf dist/types && tsc -p tsconfig.build.json && node scripts/fix-dts.mjs",
+    "build:iife": "vite build",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json && node scripts/expect-type-error.mjs"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.9.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.68.0",
+    "react-day-picker": "^10.0.2",
+    "tailwind-merge": "^3.7.0"
+  },
+  "devDependencies": {
+    "@babel/parser": "^8.1.0",
+    "@tailwindcss/vite": "^4.3.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "magic-string": "^1.4.5",
+    "playwright": "^1.64.1",
+    "preact": "^11.1.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "rollup-plugin-visualizer": "^7.1.2",
+    "tailwindcss": "^4.3.4",
+    "terser": "^5.51.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/jsondeck.js",
+  "module": "./dist/jsondeck.mjs",
+  "types": "./dist/types/index.d.ts",
+  "unpkg": "./dist/jsondeck.js",
+  "jsdelivr": "./dist/jsondeck.js",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/jsondeck.mjs",
+      "default": "./dist/jsondeck.js"
+    },
+    "./jsondeck.css": "./dist/jsondeck.css",
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "*.css"
+  ]
+}

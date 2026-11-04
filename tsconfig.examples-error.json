@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["examples/typed-error.ts", "src/vite-env.d.ts"]
+}

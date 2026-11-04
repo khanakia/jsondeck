@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jsondeck demos</title>
+<style>
+  :root { --bg:#f4f4f5; --card:#ffffff; --ink:#09090b; --muted:#71717a; --line:#e8e8eb; --link:#18181b; --chip:#f4f4f5; }
+  /* Site theme: html[data-theme] (nav.js toggle) wins; else the OS. */
+  :root[data-theme="dark"], :root.dark { --bg:#09090b; --card:#18181b; --ink:#fafafa; --muted:#a1a1aa; --line:#27272a; --link:#fafafa; --chip:#18181b; color-scheme: dark; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme]) { --bg:#09090b; --card:#18181b; --ink:#fafafa; --muted:#a1a1aa; --line:#27272a; --link:#fafafa; --chip:#18181b; color-scheme: dark; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 16px; }
+  .card h2 { font-size: 14px; margin: 0 0 4px; }
+  .card h2 a { color: var(--link); text-decoration: none; }
+  .card h2 a:hover { text-decoration: underline; }
+  .card p { margin: 0 0 8px; color: var(--muted); }
+  .chips { display:flex; flex-wrap:wrap; gap:4px; }
+  .chips a { background:var(--chip); border:1px solid var(--line); border-radius:6px; padding:1px 7px; color:var(--ink); text-decoration:none; font-size:12px; }
+  .chips a:hover { border-color: var(--link); color: var(--link); }
+  .kbd { color: var(--muted); font-size: 12px; margin-top: 18px; }
+  code { background: var(--chip); padding: 0 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<script src="demo/nav.js"></script>
+<main>
+  <h1>jsondeck demos</h1>
+  <p class="sub">JSON + config → dashboard. Every page here uses fake data.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2><a href="demo/">Dashboard</a></h2>
+      <p>Pages, sections, grid, stat tiles, charts, facets, page filter, click-to-filter, relations + row drawer, export, and the layout editor.</p>
+      <div class="chips">
+        <a href="demo/#/overview">Overview</a>
+        <a href="demo/#/inventory">Inventory</a>
+        <a href="demo/#/findings">Findings</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><a href="demo/tabs.html">Tables only (no pages)</a></h2>
+      <p>The default layout with no <code>pages</code>: one tab per table. Rich config, a custom type, zero config, and a bad config with the error box.</p>
+      <div class="chips">
+        <a href="demo/tabs.html">Findings</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><a href="demo/viz.html">Charts and widgets</a></h2>
+      <p>Every chart type (bar, stacked, grouped, line, area, pie, donut, sparkline), stat tiles, the key-value card, markdown and a relation lookup.</p>
+      <div class="chips">
+        <a href="demo/viz.html">All charts</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><a href="docs/index.html">Docs</a></h2>
+      <p>Guides, the feature list and the config reference, as a jsondeck site: sidebar groups, ⌘K search, section links and an "On this page" outline.</p>
+      <div class="chips">
+        <a href="docs/index.html#/getting-started">Getting started</a>
+        <a href="docs/index.html#/features">Features</a>
+        <a href="docs/index.html#/config">Config reference</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><a href="demo/examples.html">Examples</a></h2>
+      <p>About 24 small examples, each with a Preview and a Code tab: copy a complete HTML page for zero config, column config, formats, custom types, saved views, charts, stats, relations, pages, filters, layout editing, errors and typed config.</p>
+      <div class="chips">
+        <a href="demo/examples.html">All examples</a>
+      </div>
+    </div>
+  </div>
+
+  <p class="kbd">In tables: <code>/</code> search · <code>←</code> <code>→</code> page · <code>Esc</code> clear · <code>f</code> filter · <code>s</code> sort · <code>c</code> columns · <code>v</code> views · <code>?</code> all shortcuts</p>
+</main>
+</body>
+</html>

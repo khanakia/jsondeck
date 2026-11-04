@@ -1,0 +1,43 @@
+/*
+ * Chart colour tokens. Imported by the viz components, so any build that
+ * uses them carries these. Values: the dataviz reference palette (validated
+ * for CVD separation in light and dark). Override any --jdv-* on .jd-root to
+ * re-theme via the --jds-* tokens (THEME_TOKENS).
+ */
+/* One token set: the chart tokens read the library's --jds-* tokens (styles.css),
+   so a theme override (config `theme.light/dark` or CSS on .jd-root) reaches charts too. */
+.jd-root {
+	--jdv-surface: var(--jds-card);
+	--jdv-ink: var(--jds-foreground);
+	--jdv-ink-2: var(--jds-muted-foreground);
+	--jdv-muted: var(--jds-muted-foreground);
+	--jdv-grid: var(--jds-border);
+	--jdv-axis: var(--jds-ring);
+	--jdv-other: var(--jds-chart-other);
+	--jdv-s1: var(--jds-chart-1);
+	--jdv-s2: var(--jds-chart-2);
+	--jdv-s3: var(--jds-chart-3);
+	--jdv-s4: var(--jds-chart-4);
+	--jdv-s5: var(--jds-chart-5);
+	--jdv-s6: var(--jds-chart-6);
+	--jdv-s7: var(--jds-chart-7);
+	--jdv-s8: var(--jds-chart-8);
+	--jdv-good: var(--jds-good);
+	--jdv-warning: var(--jds-warning);
+	--jdv-serious: var(--jds-serious);
+	--jdv-critical: var(--jds-critical);
+	--jdv-up: var(--jds-up);
+	--jdv-down: var(--jds-down);
+	--jdv-tip-bg: var(--jds-popover);
+	--jdv-tip-border: var(--jds-border);
+}
+.jd-root .jdv-mark {
+	transition: opacity 120ms;
+}
+.jd-root .jdv-mark:focus-visible {
+	outline: 2px solid var(--jdv-ink);
+	outline-offset: 1px;
+}
+.jd-root .jdv-dim .jdv-mark:not(.jdv-on) {
+	opacity: 0.35;
+}
