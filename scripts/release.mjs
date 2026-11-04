@@ -273,6 +273,10 @@ if (DRY) {
 	if (answer !== "y" && answer !== "yes") fail("stopped at the confirmation")
 }
 
+// The release notes (this version's changelog section + CDN URLs) go into the tag
+// message, so `gh release create --notes-from-tag` works from any machine.
+const notes = `${changelogSection(readFileSync(CHANGELOG, "utf8"), version) ?? `jsondeck ${TAG}`}\n\nCDN:\n\n${URLS.map((u) => `- ${u}`).join("\n")}\n`
+
 // ---------- 7. commit + tag ----------
 step(7, `Commit "release: ${TAG}" on ${BRANCH}, tag a child commit that adds dist/`)
 if (DRY) {
@@ -286,7 +290,7 @@ if (DRY) {
 	const tree = out("git", ["write-tree"], { env })
 	rmSync(TMP_INDEX, { force: true })
 	const distCommit = out("git", ["commit-tree", tree, "-p", "HEAD", "-m", `release: ${TAG} (built files in dist/)`])
-	run("git", ["tag", "-a", TAG, distCommit, "-m", `jsondeck ${TAG}`])
+	run("git", ["tag", "-a", TAG, distCommit, "-m", `jsondeck ${TAG}\n\n${notes}`])
 	originals.clear() // committed: nothing to restore any more
 }
 
@@ -307,10 +311,13 @@ if (DRY) {
 
 // ---------- 9. publish targets ----------
 step(9, `Publish: ${targets.join(", ")}`)
-const notes = changelogSection(readFileSync(CHANGELOG, "utf8"), version) ?? `jsondeck ${TAG}`
 const notesFile = join(ROOT, ".git/release-notes.md")
-writeFileSync(notesFile, `${notes}\n\n**CDN**\n\n${URLS.map((u) => `- ${u}`).join("\n")}\n`)
+writeFileSync(notesFile, notes)
+// Run here: notes from the changelog and the four CDN files attached. Printed for
+// someone else to run: notes from the tag message, no local files needed (the files
+// are already in the tag, which is what jsDelivr serves).
 const ghArgs = ["release", "create", TAG, "-R", REPO, "--title", `jsondeck ${TAG}`, "--notes-file", notesFile, "--verify-tag", ...ASSETS.map((f) => `dist/${f}`)]
+const ghPrinted = `gh release create ${TAG} -R ${REPO} --title "jsondeck ${TAG}" --notes-from-tag --verify-tag`
 for (const t of targets) {
 	if (t === "github") {
 		// Only create the release as the repository owner; any other logged-in account
@@ -321,10 +328,10 @@ for (const t of targets) {
 		// In the release workflow the job token acts for the repository itself (it cannot read /user).
 		if (process.env.GITHUB_ACTIONS === "true" && process.env.GH_TOKEN) ghUser = owner
 		if (DRY) {
-			console.log(ghUser === owner ? `would run: gh ${ghArgs.join(" ")}` : `would print, not run (gh is ${ghUser ? `logged in as ${ghUser}, not ${owner}` : "not logged in"}): gh ${ghArgs.join(" ")}`)
+			console.log(ghUser === owner ? `would run: gh ${ghArgs.join(" ")}` : `would print, not run (gh is ${ghUser ? `logged in as ${ghUser}, not ${owner}` : "not logged in"}): ${ghPrinted}`)
 		} else if (ghUser !== owner) {
 			console.log(`gh is ${ghUser ? `logged in as ${ghUser}, not ${owner}` : "not logged in"}; create the release from a shell logged in as ${owner}:`)
-			console.log(`  gh ${ghArgs.join(" ")}`)
+			console.log(`  ${ghPrinted}`)
 		} else if (ok("gh", ["release", "view", TAG, "-R", REPO])) {
 			console.log(`GitHub release ${TAG} already exists; left as is`)
 		} else {
