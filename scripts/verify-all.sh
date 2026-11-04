@@ -8,6 +8,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
 MODE="${1:-both}"
+mkdir -p shots
 PORT="${VERIFY_PORT:-4319}"
 fail=0
 
