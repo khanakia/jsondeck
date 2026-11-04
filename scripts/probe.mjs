@@ -23,7 +23,7 @@ for (const scheme of ["light", "dark"]) {
 		ok("code tab: highlighted complete HTML (collapsed)", (await ex.locator('[data-jd="code"] span[class]').count()) > 20 && code.startsWith("<!doctype html>") && (await ex.locator('[data-jd="code-toggle"]').count()) === 1, code.split("\n").length + " lines shown")
 		await ex.locator('[data-jd="code-toggle"]').click()
 		const full = await ex.locator('[data-jd="code"]').textContent()
-		ok("show all expands; snippet has CDN tags, data and mount", full.includes("cdn.jsdelivr.net/npm/jsondeck@0.1.0/dist/jsondeck.js") && full.includes('id="data"') && full.includes("JsonDeck.mount('#app'") && full.includes("pin: 'left'"), full.split("\n").length + " lines")
+		ok("show all expands; snippet has CDN tags, data and mount", full.includes("cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.js") && full.includes('id="data"') && full.includes("JsonDeck.mount('#app'") && full.includes("pin: 'left'"), full.split("\n").length + " lines")
 		const ov = await ex.locator('[data-jd="code"]').evaluate((el) => [getComputedStyle(el).overflowX, getComputedStyle(el).whiteSpace].join(" "))
 		ok("code: no wrap, scrolls inside", ov === "auto pre", ov)
 		await ex.locator('[data-jd="copy-code"]').click()

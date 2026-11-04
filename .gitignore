@@ -6,3 +6,5 @@ dist/
 ._*
 dist-preact/
 .analyze/
+*.tgz
+.env.local

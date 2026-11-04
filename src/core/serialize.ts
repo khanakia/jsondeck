@@ -47,7 +47,7 @@ export function trimData(data: unknown, n: number): unknown {
 }
 
 export type SnippetOptions = {
-	/** Version on the CDN URLs. */
+	/** Version on the CDN URLs, without the "v" (served from the GitHub tag v<version> through jsDelivr). */
 	version: string
 	/** Rows kept per table in the embedded data. */
 	rows?: number | undefined
@@ -59,7 +59,7 @@ export const SNIPPET_ROWS = 8
 export function htmlSnippet(config: Record<string, unknown>, opts: SnippetOptions): string {
 	const { data, ...rest } = config
 	const json = JSON.stringify(trimData(data, opts.rows ?? SNIPPET_ROWS), null, 2).replace(/</g, "\\u003c")
-	const cdn = `https://cdn.jsdelivr.net/npm/jsondeck@${opts.version}/dist`
+	const cdn = `https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v${opts.version}/dist`
 	const cfg = toSource({ data: "#data", ...rest }, 0)
 	return `<!doctype html>
 <html lang="en">

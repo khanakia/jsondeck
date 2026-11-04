@@ -1,12 +1,85 @@
 {
   "name": "jsondeck",
   "version": "0.1.0",
-  "private": true,
+  "description": "Turn JSON plus a small config into a compact dashboard: tables with filters, sort, grouping and saved views, charts, stat tiles and linked tables. One script tag from a CDN, or an ES module for React apps.",
+  "keywords": [
+    "json",
+    "dashboard",
+    "data-table",
+    "datagrid",
+    "table",
+    "react",
+    "charts",
+    "viewer",
+    "cdn",
+    "admin",
+    "inventory",
+    "filters"
+  ],
+  "license": "MIT",
+  "author": "Aman Bansal (khanakia)",
+  "homepage": "https://github.com/khanakia/jsondeck#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khanakia/jsondeck.git"
+  },
+  "bugs": {
+    "url": "https://github.com/khanakia/jsondeck/issues"
+  },
   "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/jsondeck.js",
+  "module": "./dist/jsondeck.mjs",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/jsondeck.mjs",
+      "default": "./dist/jsondeck.js"
+    },
+    "./jsondeck.css": "./dist/jsondeck.css",
+    "./full": "./dist/jsondeck.full.js",
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "*.css",
+    "./dist/jsondeck.full.js"
+  ],
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 128",
+    "safari >= 16.4"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "vite build && vite build -c vite.esm.config.ts && node scripts/make-full.mjs && rm -rf dist/types && tsc -p tsconfig.build.json && node scripts/fix-dts.mjs",
     "build:iife": "vite build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json && node scripts/expect-type-error.mjs"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json && node scripts/expect-type-error.mjs",
+    "build:preact": "vite build -c vite.preact.config.ts",
+    "analyze": "vite build -c vite.analyze.config.ts",
+    "size": "node scripts/size.mjs",
+    "verify": "scripts/verify-all.sh",
+    "release": "node scripts/release.mjs",
+    "release:dry": "node scripts/release.mjs --dry"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -32,29 +105,5 @@
     "terser": "^5.51.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.5"
-  },
-  "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18"
-  },
-  "files": [
-    "dist"
-  ],
-  "main": "./dist/jsondeck.js",
-  "module": "./dist/jsondeck.mjs",
-  "types": "./dist/types/index.d.ts",
-  "unpkg": "./dist/jsondeck.js",
-  "jsdelivr": "./dist/jsondeck.js",
-  "exports": {
-    ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/jsondeck.mjs",
-      "default": "./dist/jsondeck.js"
-    },
-    "./jsondeck.css": "./dist/jsondeck.css",
-    "./package.json": "./package.json"
-  },
-  "sideEffects": [
-    "*.css"
-  ]
+  }
 }

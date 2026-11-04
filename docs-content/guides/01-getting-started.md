@@ -3,7 +3,7 @@
 jsondeck turns JSON into a dashboard: tables with search, filters, sort and paging, plus charts and stat tiles. You load one script, point it at your data, and call `JsonDeck.mount`.
 
 :::warning
-jsondeck is not published to npm or jsdelivr yet. The CDN URLs below are the planned ones; until then, use `dist/jsondeck.js` and `dist/jsondeck.css` from a local build.
+jsondeck is served from GitHub release tags through jsDelivr; it is not on npm. The URLs below work once v0.1.0 is released; until then, use `dist/jsondeck.js` and `dist/jsondeck.css` from a local build.
 :::
 
 ## The smallest page
@@ -19,8 +19,8 @@ jsondeck is not published to npm or jsdelivr yet. The CDN URLs below are the pla
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsondeck@0.1.0/dist/jsondeck.css">
-  <script src="https://cdn.jsdelivr.net/npm/jsondeck@0.1.0/dist/jsondeck.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.css">
+  <script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.js"></script>
 </head>
 <body>
   <script type="application/json" id="data">

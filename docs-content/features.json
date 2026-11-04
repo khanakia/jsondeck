@@ -1133,7 +1133,7 @@
     "example": "ex-zero",
     "since": "0.1.0",
     "status": "check",
-    "checkReason": "Not published to npm/jsdelivr yet; the CDN URL is the planned one."
+    "checkReason": "Not released yet; served from the GitHub tag through jsDelivr once v0.1.0 is tagged."
   },
   {
     "id": "esm-build",
@@ -1144,7 +1144,7 @@
     "example": "ex-typed",
     "since": "0.1.0",
     "status": "check",
-    "checkReason": "Not published to npm yet."
+    "checkReason": "Not released yet; the ES module is served from the GitHub tag through jsDelivr (not npm)."
   },
   {
     "id": "file-protocol",

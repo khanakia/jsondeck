@@ -1,0 +1,27 @@
+# jsondeck
+
+> A JavaScript library, loaded from the jsDelivr CDN with one script tag, that turns JSON plus an optional config into a compact interactive dashboard: data tables with search, filters, sort, pagination, grouping, saved views and copy/export, plus charts, stat tiles, key-value cards, Markdown, linked tables and multi-page layouts. No build step, no server, no network calls; works from file://. MIT licensed.
+
+Load it with `<script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.full.js"></script>` and call `JsonDeck.mount('#app', { data: '#data' })`, where `#data` is a `<script type="application/json">` block or `data` is a plain object. With no config, every array becomes a table and column types are guessed. The ES module `dist/jsondeck.mjs` exports `mount` and `defineConfig` and expects React 18+ from the host page. It is not on npm.
+
+## Docs
+
+- [README](https://github.com/khanakia/jsondeck/blob/main/README.md): install, CDN URLs, sizes, browser support, FAQ
+- [Getting started](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/01-getting-started.md)
+- [Columns and types](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/02-columns-and-types.md)
+- [Filters and quick filters](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/03-filters-and-quick-filters.md)
+- [Sorting, grouping and views](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/04-sorting-grouping-views.md)
+- [Pages, sections and grid](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/05-pages-sections-grid.md)
+- [Charts and widgets](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/06-charts-and-widgets.md)
+- [Relations, master-detail and drill-down](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/07-relations-master-detail-drilldown.md)
+- [Selection and copy](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/08-selection-and-copy.md)
+- [Theming and classes](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/09-theming-and-classes.md)
+- [TypeScript and defineConfig](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/10-typescript-defineConfig.md)
+- [Keyboard and accessibility](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/11-keyboard-and-accessibility.md)
+- [Embedding on your site](https://github.com/khanakia/jsondeck/blob/main/docs-content/guides/12-embedding-on-your-site.md)
+
+## Reference
+
+- [Config reference (JSON)](https://github.com/khanakia/jsondeck/blob/main/docs-content/config-reference.json): every config key with its type and default
+- [Feature list (JSON)](https://github.com/khanakia/jsondeck/blob/main/docs-content/features.json)
+- [Changelog](https://github.com/khanakia/jsondeck/blob/main/CHANGELOG.md)

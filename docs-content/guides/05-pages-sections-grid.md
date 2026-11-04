@@ -7,8 +7,8 @@ Without `pages`, jsondeck shows one tab per table. With `pages`, you decide what
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsondeck@0.1.0/dist/jsondeck.css">
-  <script src="https://cdn.jsdelivr.net/npm/jsondeck@0.1.0/dist/jsondeck.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.css">
+  <script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.js"></script>
 </head>
 <body>
   <script type="application/json" id="data">{ "findings": [ { "id": "F-1", "severity": "high", "status": "open" } ] }</script>

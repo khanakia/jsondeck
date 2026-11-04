@@ -1,5 +1,5 @@
 // Minimal static server for the repo root (demo + dist). Listens on
-// 127.0.0.1:$PORT only. Run: node scripts/serve.mjs
+// 127.0.0.1:$PORT only (default 4173). Run: node scripts/serve.mjs
 import { createReadStream, statSync } from "node:fs"
 import { createServer } from "node:http"
 import { extname, join, normalize, resolve } from "node:path"
@@ -22,5 +22,6 @@ createServer((req, res) => {
 		return res.writeHead(404).end("not found")
 	}
 	res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", "cache-control": "no-store" })
-	createReadStream(file).pipe(res)
+	// A client that hangs up mid-file must not take the whole server down.
+	createReadStream(file).on("error", () => res.destroy()).pipe(res)
 }).listen(PORT, "127.0.0.1", () => console.log(`serving ${ROOT} on http://127.0.0.1:${PORT}`))

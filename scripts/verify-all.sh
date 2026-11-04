@@ -21,10 +21,12 @@ run_suites() { # $1 = base URL ending in /
 }
 
 if [[ "$MODE" == both || "$MODE" == http ]]; then
-	PORT="$PORT" node scripts/serve.mjs >/dev/null 2>&1 &
+	PORT="$PORT" node scripts/serve.mjs >shots/verify-serve.log 2>&1 &
 	srv=$!
 	trap 'kill $srv 2>/dev/null' EXIT
-	sleep 0.5
+	# Wait until the server answers (a fixed sleep raced it once and every suite after the first got "connection refused").
+	for _ in $(seq 1 50); do node -e "fetch('http://127.0.0.1:${PORT}/').then(()=>process.exit(0),()=>process.exit(1))" && break; sleep 0.2; done
+	kill -0 $srv 2>/dev/null || { echo "verify-all: the test server did not start (is port ${PORT} taken? set VERIFY_PORT)"; exit 1; }
 	echo "=== http://127.0.0.1:${PORT}/"
 	run_suites "http://127.0.0.1:${PORT}/" http
 fi

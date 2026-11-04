@@ -1,0 +1,42 @@
+name: Bug report
+description: Something in jsondeck does not work as described.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: jsondeck version
+      description: The tag in your script URL, for example v0.1.0.
+    validations:
+      required: true
+  - type: dropdown
+    id: build
+    attributes:
+      label: Which file
+      options:
+        - jsondeck.full.js (one tag)
+        - jsondeck.js + jsondeck.css
+        - jsondeck.mjs (ES module)
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: Chrome 131 on macOS 15
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Smallest page or config that shows it
+      description: Use made-up data, never real or private data.
+      render: html
+    validations:
+      required: true

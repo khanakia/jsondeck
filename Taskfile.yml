@@ -1,0 +1,47 @@
+version: '3'
+
+# Commands for building, checking and releasing jsondeck.
+# If Chromium needs extra system libraries on your machine, put
+# LD_LIBRARY_PATH=<dir> in .env.local (git-ignored); it is loaded for every task.
+dotenv: ['.env.local']
+
+tasks:
+  build:
+    desc: Build dist/ (IIFE, one-tag full file, ESM, CSS, types, source maps)
+    cmds:
+      - pnpm build
+
+  typecheck:
+    desc: Strict type check of src and the typed examples
+    cmds:
+      - pnpm typecheck
+
+  size:
+    desc: Raw, gzip and brotli size of every file in dist/
+    cmds:
+      - node scripts/size.mjs
+
+  analyze:
+    desc: Treemap of what is inside the IIFE bundle (.analyze/stats.html)
+    cmds:
+      - pnpm analyze
+
+  build:preact:
+    desc: Experimental Preact IIFE into dist-preact/ (not published; fails 2 table-filter checks)
+    cmds:
+      - pnpm build:preact
+
+  verify:
+    desc: Every headless suite over http and file://, plus the CDN load check
+    cmds:
+      - scripts/verify-all.sh
+
+  release:dry:
+    desc: Everything a release does (version, changelog, build, checks, scans) except commit, tag, push and publish
+    cmds:
+      - node scripts/release.mjs --dry {{.CLI_ARGS}}
+
+  release:
+    desc: Release the next version (patch only) to GitHub + jsdelivr; asks before committing
+    cmds:
+      - node scripts/release.mjs {{.CLI_ARGS}}

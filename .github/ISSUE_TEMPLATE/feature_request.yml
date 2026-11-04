@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest something jsondeck should do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do with your data, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like
+      description: How it could look in config or in the UI.
+  - type: textarea
+    id: example
+    attributes:
+      label: Example data (made up)
+      render: json

@@ -3,7 +3,7 @@
 The ES module build ships type definitions for every config type. `defineConfig(data, config)` checks table names against your data and column names against each table's row type, and gives row callbacks the real row type.
 
 :::warning
-The npm package is not published yet; the import paths below are the planned ones.
+jsondeck is not on npm. Import the ES module from its CDN URL (`https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.mjs`) or a local copy of `dist/`, and point TypeScript at `dist/types/`. The bare `jsondeck` import below assumes a path alias or import map that maps it there.
 :::
 
 ```ts
