@@ -230,6 +230,7 @@ if (!resume) {
 step(4, "Build, type check and every headless check")
 if (!resume) {
 	run("pnpm", ["build"])
+	run("pnpm", ["build:viz"]) // dist-viz/ is git-ignored, and the charts demo checked by verify-viz.mjs loads it
 	run("pnpm", ["typecheck"])
 	run("bash", ["scripts/verify-all.sh"])
 	for (const f of ASSETS) if (!existsSync(join(ROOT, "dist", f))) fail(`dist/${f} was not built`)

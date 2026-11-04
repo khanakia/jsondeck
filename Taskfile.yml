@@ -26,13 +26,18 @@ tasks:
     cmds:
       - pnpm analyze
 
+  build:viz:
+    desc: Build the charts demo bundle (dist-viz/) that demo/viz.html and verify-viz.mjs load
+    cmds:
+      - pnpm build:viz
+
   build:preact:
     desc: Experimental Preact IIFE into dist-preact/ (not published; fails 2 table-filter checks)
     cmds:
       - pnpm build:preact
 
   verify:
-    desc: Every headless suite over http and file://, plus the CDN load check
+    desc: Every headless suite over http and file://, plus the CDN load check (run build and build:viz first)
     cmds:
       - scripts/verify-all.sh
 

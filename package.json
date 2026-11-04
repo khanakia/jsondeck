@@ -63,6 +63,7 @@
     "build:iife": "vite build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json && node scripts/expect-type-error.mjs",
     "build:preact": "vite build -c vite.preact.config.ts",
+    "build:viz": "vite build -c src/viz/vite.viz.config.ts",
     "analyze": "vite build -c vite.analyze.config.ts",
     "size": "node scripts/size.mjs",
     "verify": "scripts/verify-all.sh",
