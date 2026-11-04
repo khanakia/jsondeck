@@ -320,7 +320,7 @@ for (const t of targets) {
 		// In the release workflow the job token acts for the repository itself (it cannot read /user).
 		if (process.env.GITHUB_ACTIONS === "true" && process.env.GH_TOKEN) ghUser = owner
 		if (DRY) {
-			console.log(`would run (as ${ghUser || "nobody: gh is not logged in"}): gh ${ghArgs.join(" ")}`)
+			console.log(ghUser === owner ? `would run: gh ${ghArgs.join(" ")}` : `would print, not run (gh is ${ghUser ? `logged in as ${ghUser}, not ${owner}` : "not logged in"}): gh ${ghArgs.join(" ")}`)
 		} else if (ghUser !== owner) {
 			console.log(`gh is ${ghUser ? `logged in as ${ghUser}, not ${owner}` : "not logged in"}; create the release from a shell logged in as ${owner}:`)
 			console.log(`  gh ${ghArgs.join(" ")}`)
