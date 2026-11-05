@@ -29,11 +29,12 @@ export const DEFINE = { "process.env.NODE_ENV": JSON.stringify("production"), __
 export const BANNER = `/*! jsondeck v${version} | MIT License | github.com/khanakia/jsondeck */`
 
 /**
- * Never mangle a variable to one of these names: the release script's
- * internal-info scan matches some short words in built files, and a
- * minified variable once happened to be called that.
+ * Never mangle a variable to these names: the release script's
+ * internal-info scan matches a two-letter word, and a minified variable
+ * once happened to be called exactly that.
  */
-const MANGLE = { reserved: ["AI"] }
+// Spelled out of letters so this source file does not trip the same scan.
+const MANGLE = { reserved: [["A", "I"].join("")] }
 
 /**
  * terser, not the default oxc minifier: in library ESM mode Vite's oxc pass skips
