@@ -29,6 +29,13 @@ export const DEFINE = { "process.env.NODE_ENV": JSON.stringify("production"), __
 export const BANNER = `/*! jsondeck v${version} | MIT License | github.com/khanakia/jsondeck */`
 
 /**
+ * Never mangle a variable to one of these names: the release script's
+ * internal-info scan matches some short words in built files, and a
+ * minified variable once happened to be called that.
+ */
+const MANGLE = { reserved: ["AI"] }
+
+/**
  * terser, not the default oxc minifier: in library ESM mode Vite's oxc pass skips
  * whitespace, which left dist/jsondeck.mjs at 696 kB raw / 178 kB gzip; terser
  * takes it to about 509 kB / 154 kB and matches oxc on the IIFE. PURE annotations
@@ -39,7 +46,7 @@ export const MINIFY: Pick<BuildEnvironmentOptions, "minify" | "terserOptions"> =
 	minify: "terser",
 	terserOptions: {
 		compress: { passes: 2, pure_funcs: ["console.debug"] },
-		mangle: true,
+		mangle: MANGLE,
 		format: { comments: false, preamble: BANNER, preserve_annotations: false },
 	},
 }
@@ -50,7 +57,7 @@ export const MINIFY_ESM: Pick<BuildEnvironmentOptions, "minify" | "terserOptions
 	terserOptions: {
 		module: true,
 		compress: { passes: 2, pure_funcs: ["console.debug"] },
-		mangle: true,
+		mangle: MANGLE,
 		format: { comments: false, preamble: BANNER, preserve_annotations: false },
 	},
 }
