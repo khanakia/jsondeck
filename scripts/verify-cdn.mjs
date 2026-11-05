@@ -8,11 +8,18 @@
 //      through an import map (http only: browsers refuse module scripts from file://)
 // Then the split build (dist/jsondeck.js + dist/chunks/), over http:
 //   5. first load of a plain zero-config table: the JS bytes actually requested (gzip,
-//      from the network log) stay under FIRST_LOAD_BUDGET_KB, and no chart, calendar,
-//      editor, highlighter or popups chunk is requested
-//   6. mount called before the library has loaded: handle, issues, ready, describe after ready
+//      from the network log) stay under FIRST_LOAD_BUDGET_KB, and no chunk it does not
+//      need is requested (charts, calendar, editor, highlighter, popups, validator
+//      messages, saved views, resize / reorder, keyboard shortcuts, sidebar, API extras)
+//   6. mount called before the library has loaded: handle, issues, ready, describe after
+//      `JsonDeck.ready`
 //   7. the dashboard demo: the chart chunk loads on demand and the charts render
 //   8. opening a date filter loads the calendar chunk and shows the calendar
+//  10. a bad config: the issues box shows the sentence with its "did you mean", and
+//      handle.issues + the console warning fill in by handle.ready
+//  11. a stored default saved view: the very first rows painted are already the view's
+//  12. "/" focuses search on the first press, before the shortcut chunk has loaded
+//  13. column resize and drag-reorder work on first use
 // and from file://: 9. the split loader shows a clear message pointing at jsondeck.full.js
 //   node scripts/verify-cdn.mjs <base-url-ending-in-/> [shots-prefix]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
@@ -109,12 +116,14 @@ for (const c of cases) {
 // ── The split build ──────────────────────────────────────────────────────────
 /**
  * Most JS a plain zero-config table page may download on first load, gzip level 9,
- * React included (loader + entry + core + runtime). Measured at about 118.6 kB when
- * this was set; the margin only absorbs small changes, a real regression fails here.
+ * React included (loader + entry + core + runtime). Measured at FIRST_LOAD_MEASURED_KB
+ * when this was set; the 3 kB margin only absorbs small changes, a real regression
+ * (a part folded back into the core) fails here.
  */
-const FIRST_LOAD_BUDGET_KB = 121
-/** Chunks a plain table must not fetch before anyone interacts with it (named after what is in them). */
-const NOT_ON_FIRST_LOAD = [/chart/i, /date/i, /edit/i, /codeview|markdown/i, /popups/i]
+const FIRST_LOAD_MEASURED_KB = 105.2
+const FIRST_LOAD_BUDGET_KB = FIRST_LOAD_MEASURED_KB + 3
+/** Chunks a plain valid table must not fetch before anyone interacts with it (named after what is in them). */
+const NOT_ON_FIRST_LOAD = [/chart/i, /date/i, /edit/i, /codeview|markdown/i, /popups/i, /explain|issues/i, /views/i, /drag/i, /shortcuts/i, /sidebar/i, /extras/i, /toast/i, /pinning/i]
 const kb = (n) => `${(n / 1024).toFixed(1)} kB`
 /** Every script URL the page requests (classic scripts, module imports, modulepreloads). */
 const scriptLog = (p) => {
@@ -131,11 +140,15 @@ const HOSTS = Array.from({ length: 40 }, (_, i) => ({ ip: `10.0.${i >> 4}.${i & 
 const splitPage = (body) => `<!doctype html><html><head><meta charset="utf-8"><title>split check</title><link rel="stylesheet" href="../../dist/jsondeck.css"></head><body><script type="application/json" id="data">${JSON.stringify({ hosts: HOSTS })}</script><div id="app"></div><script src="../../dist/jsondeck.js"></script><script>${body}</script></body></html>`
 
 if (base.startsWith("http")) {
-	// 5 + 6: plain table, mount before the core has loaded.
+	// 5: plain table, as a page that only mounts.
 	writeFileSync(new URL("split-table.html", PAGES), splitPage(`
 	  window.__h = JsonDeck.mount('#app', { data: '#data' })
+	  window.__h.ready.then(() => { window.__issues = window.__h.issues.length })`))
+	// 6: mount before the core has loaded, then the rest of the API after JsonDeck.ready.
+	writeFileSync(new URL("split-api.html", PAGES), splitPage(`
+	  window.__h = JsonDeck.mount('#app', { data: '#data' })
 	  try { JsonDeck.describe({}); window.__early = 'no error' } catch (e) { window.__early = e.message }
-	  window.__h.ready.then(() => { window.__desc = JsonDeck.describe('#data'); window.__issues = window.__h.issues.length })`))
+	  JsonDeck.ready.then(() => { window.__desc = JsonDeck.describe('#data'); window.__tokens = Object.keys(JsonDeck.THEME_TOKENS).length })`))
 	{
 		const p = await browser.newPage()
 		const errors = []
@@ -152,14 +165,103 @@ if (base.startsWith("http")) {
 		console.log(`  JS requested: ${names.map((n, i) => `${n} ${kb(gzBytes(urls[i]))}`).join(", ")}`)
 		ok(`first-load JS is ${kb(total)} gzip, under ${FIRST_LOAD_BUDGET_KB} kB`, total <= FIRST_LOAD_BUDGET_KB * 1024)
 		const early = names.filter((n) => NOT_ON_FIRST_LOAD.some((re) => re.test(n)))
-		ok("no chart, calendar, editor, highlighter or popups chunk requested", early.length === 0, early.join(", "))
-		const r = await p.evaluate(() => ({ rows: document.querySelectorAll('[data-jd="table"] tbody tr').length, early: window.__early, tables: Object.keys(window.__desc?.tables ?? {}), issues: window.__issues }))
-		console.log("== split: mount before the library loaded")
-		ok("table rendered (mount was queued)", r.rows > 0, `rows=${r.rows}`)
-		ok("describe() before load throws a clear 'still loading' error", /still loading/.test(r.early ?? ""), r.early)
-		ok("handle.ready resolves; describe() works after it", r.tables.includes("hosts") && r.issues === 0, `${r.tables.join(",")} issues=${r.issues}`)
+		ok("no chunk the plain table does not need (charts, calendar, editor, highlighter, popups, validator, views, resize, keyboard, sidebar, extras)", early.length === 0, early.join(", "))
+		const r = await p.evaluate(() => ({ rows: document.querySelectorAll('[data-jd="table"] tbody tr').length, issues: window.__issues }))
+		ok("table rendered (mount was queued); handle.ready resolved with no issues", r.rows > 0 && r.issues === 0, `rows=${r.rows} issues=${r.issues}`)
 		ok("no page errors", errors.length === 0, errors.slice(0, 2).join(" | "))
 		await p.screenshot({ path: `${prefix}-split-table.png` })
+		await p.close()
+	}
+	{
+		const p = await browser.newPage()
+		const errors = []
+		p.on("pageerror", (e) => errors.push(String(e)))
+		await p.goto(`${base}shots/cdn-pages/split-api.html`)
+		await p.waitForFunction(() => window.__desc !== undefined, null, { timeout: 10000 }).catch(() => undefined)
+		const r = await p.evaluate(() => ({ rows: document.querySelectorAll('[data-jd="table"] tbody tr').length, early: window.__early, tables: Object.keys(window.__desc?.tables ?? {}), tokens: window.__tokens }))
+		console.log("== split: mount before the library loaded, API after JsonDeck.ready")
+		ok("table rendered (mount was queued)", r.rows > 0, `rows=${r.rows}`)
+		ok("describe() before load throws a clear 'still loading' error", /still loading/.test(r.early ?? ""), r.early)
+		ok("after JsonDeck.ready: describe() and THEME_TOKENS work", r.tables.includes("hosts") && r.tokens > 40, `${r.tables.join(",")} tokens=${r.tokens}`)
+		ok("no page errors", errors.length === 0, errors.slice(0, 2).join(" | "))
+		await p.close()
+	}
+	// 10: a bad config still shows the issues box (its sentences are an on-demand chunk).
+	writeFileSync(new URL("split-bad.html", PAGES), splitPage(`
+	  window.__warn = []
+	  const w = console.warn; console.warn = (...a) => { window.__warn.push(a.join(' ')); w(...a) }
+	  window.__h = JsonDeck.mount('#app', { data: '#data', tables: { hosts: { pageSze: 10, columns: { cpuu: 'number' } } } })
+	  window.__now = window.__h.issues.length
+	  window.__h.ready.then(() => { window.__issues = window.__h.issues.slice() })`))
+	{
+		const p = await browser.newPage()
+		await p.goto(`${base}shots/cdn-pages/split-bad.html`)
+		await p.waitForFunction(() => window.__issues !== undefined, null, { timeout: 10000 }).catch(() => undefined)
+		await p.locator('[data-jd="issues"]').waitFor({ timeout: 10000 }).catch(() => undefined)
+		const r = await p.evaluate(() => ({ box: document.querySelector('[data-jd="issues"]')?.textContent ?? "", issues: window.__issues ?? [], warn: window.__warn ?? [], rows: document.querySelectorAll('[data-jd="table"] tbody tr').length }))
+		console.log("== split: bad config")
+		ok("issues box shows both problems with their suggestions", /2 config issue/.test(r.box) && /did you mean pageSize/.test(r.box) && /no such column \(did you mean cpu\?\)/.test(r.box), r.box.slice(0, 160))
+		ok("handle.issues filled by handle.ready", r.issues.length === 2 && r.issues.some((i) => i === "tables.hosts.pageSze: unknown key (did you mean pageSize?)"), r.issues.join(" | "))
+		ok("console warning printed once", r.warn.filter((w) => w.includes("config issue")).length === 1, r.warn.join(" | ").slice(0, 160))
+		ok("the valid rest still renders", r.rows > 0, `rows=${r.rows}`)
+		await p.close()
+	}
+	// 11: a stored default view: the first rows ever painted are the view's (no flash of the unfiltered table).
+	const VIEW = [{ id: "v_test", name: "Web 1x", isDefault: true, state: { search: "web-1", filters: [], sort: [] }, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" }]
+	writeFileSync(new URL("split-view.html", PAGES), splitPage(`window.__h = JsonDeck.mount('#app', { data: '#data' })`).replace("<body>", `<body><script>
+	  localStorage.setItem('dt:views:jsondeck:hosts', ${JSON.stringify(JSON.stringify(VIEW))})
+	  window.__first = null
+	  new MutationObserver((_, obs) => { const n = document.querySelectorAll('[data-jd="table"] tbody tr').length; if (n > 0 && window.__first === null) { window.__first = n; obs.disconnect() } }).observe(document.documentElement, { childList: true, subtree: true })
+	</script>`))
+	{
+		const p = await browser.newPage()
+		await p.goto(`${base}shots/cdn-pages/split-view.html`)
+		await p.waitForSelector('[data-jd="table"] tbody tr', { timeout: 10000 }).catch(() => undefined)
+		await settled(p)
+		const r = await p.evaluate(() => ({ first: window.__first, rows: document.querySelectorAll('[data-jd="table"] tbody tr').length, search: document.querySelector('[data-jd="search"]')?.value ?? null, count: document.querySelector('[data-jd="count"]')?.textContent ?? "", views: document.querySelector('[data-jd-views-trigger]')?.textContent ?? "" }))
+		console.log("== split: stored default view")
+		ok("the first rows painted are the view's 11 (no flash of all 40)", r.first === 11 && r.rows === 11, `first=${r.first} now=${r.rows} count="${r.count}"`)
+		ok("the view's search is in the box and the Views button names it", r.search === "web-1" && r.views.includes("Web 1x"), `search=${r.search} views="${r.views}"`)
+		await p.evaluate(() => localStorage.clear())
+		await p.close()
+	}
+	// 12 + 13: "/" on the first press; resize and reorder on first use (their chunks load on demand).
+	{
+		const p = await browser.newPage({ viewport: { width: 1200, height: 800 } })
+		const urls = scriptLog(p)
+		await p.goto(`${base}shots/cdn-pages/split-table.html`)
+		await p.waitForSelector('[data-jd="table"] tbody tr', { timeout: 10000 }).catch(() => undefined)
+		await settled(p)
+		await p.waitForLoadState("networkidle")
+		const keysBefore = urls.filter((u) => /shortcuts/.test(u)).length
+		// Nothing clicked yet (a click in the table would fetch the shortcut chunk): the very first key.
+		await p.keyboard.press("/")
+		const focused = await p.evaluate(() => document.activeElement?.getAttribute("data-jd"))
+		console.log("== split: first use")
+		ok('"/" focuses search on the first press', keysBefore === 0 && focused === "search", `focused=${focused} shortcut chunk before=${keysBefore}`)
+		await p.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur())
+		const ids = () => p.$$eval('[data-jd="thead"] th[data-col-id]', (ths) => ths.map((t) => t.getAttribute("data-col-id")))
+		const before = await ids()
+		const first = before[0] ?? ""
+		const th = p.locator(`[data-jd="thead"] th[data-col-id="${first}"]`)
+		const w0 = (await th.boundingBox())?.width ?? 0
+		const handle = th.locator('button[aria-label="Resize column"]')
+		const hb = await handle.boundingBox()
+		if (hb) {
+			await p.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2)
+			await p.mouse.down()
+			await p.mouse.move(hb.x + 80, hb.y + hb.height / 2, { steps: 6 })
+			await p.mouse.up()
+		}
+		await p.waitForTimeout(200)
+		const w1 = (await th.boundingBox())?.width ?? 0
+		ok("resize works on first use (+80px drag widens the column)", w1 - w0 > 60, `${Math.round(w0)} -> ${Math.round(w1)}px`)
+		await p.locator(`[data-jd-sort="${first}"]`).dragTo(p.locator(`[data-jd="thead"] th[data-col-id="${before[2]}"]`))
+		await p.waitForTimeout(300)
+		const after = await ids()
+		ok("drag-reorder works on first use", after.indexOf(first) === 2, `${before.join(",")} -> ${after.join(",")}`)
+		const loaded = urls.map((u) => u.slice(u.lastIndexOf("/") + 1))
+		ok("the shortcut and resize chunks loaded on use", loaded.some((n) => /shortcuts/.test(n)) && loaded.some((n) => /drag/.test(n)), loaded.filter((n) => /shortcuts|drag/.test(n)).join(","))
 		await p.close()
 	}
 	// 7: the dashboard demo loads the chart chunk on demand and renders the charts.

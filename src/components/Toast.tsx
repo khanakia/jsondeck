@@ -1,11 +1,14 @@
 /**
  * Tiny toast stack. `toast(msg)` works from anywhere (no React context): it
  * writes to a module-level store, and every mounted <Toaster /> renders it
- * through useSyncExternalStore. Mount one <Toaster /> per page (the deck does).
+ * through useSyncExternalStore. One <Toaster /> per page, mounted on the first
+ * toast (ensureToaster). An on-demand chunk: callers use toast-api.ts, which
+ * loads this module the first time a toast is shown.
  * Bottom-centre, auto-hides, announced politely to screen readers.
  */
 import * as React from "react"
 import { createPortal } from "react-dom"
+import { createRoot } from "react-dom/client"
 import { usePageTheme } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 
@@ -98,4 +101,15 @@ export function Toaster() {
 		</div>,
 		document.body,
 	)
+}
+
+/** One toast host for the whole page, created on the first toast. */
+let toasterMounted = false
+export function ensureToaster(): void {
+	if (toasterMounted || typeof document === "undefined") return
+	toasterMounted = true
+	const host = document.createElement("div")
+	host.setAttribute("data-jd", "toaster-host")
+	document.body.appendChild(host)
+	createRoot(host).render(<Toaster />)
 }

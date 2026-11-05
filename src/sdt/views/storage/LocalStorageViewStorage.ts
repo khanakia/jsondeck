@@ -1,3 +1,4 @@
+import { VIEWS_KEY_PREFIX } from "../../../core/views-key"
 import type { SavedView, ViewStorage } from "./ViewStorage"
 
 /**
@@ -8,14 +9,20 @@ import type { SavedView, ViewStorage } from "./ViewStorage"
  *
  * Safe across SSR (no-op when window is undefined).
  */
+/** The localStorage key of a scope's views; core/views-key.ts holds the same prefix for the first-paint check. */
+export function viewsKey(scope: string): string {
+	return `${VIEWS_KEY_PREFIX}${scope}`
+}
+
 export class LocalStorageViewStorage implements ViewStorage {
 	private readonly key: string
 
 	constructor(scope: string) {
-		this.key = `dt:views:${scope}`
+		this.key = viewsKey(scope)
 	}
 
-	private read(): SavedView[] {
+	/** The stored views, synchronously (the first render uses it to open on the default view). */
+	read(): SavedView[] {
 		if (typeof window === "undefined") return []
 		try {
 			const raw = window.localStorage.getItem(this.key)

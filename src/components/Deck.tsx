@@ -4,9 +4,8 @@
  * the page "bus" that lets charts and facets filter tables. It renders a list
  * of placed components; the no-`pages` default is one page with a tab per table.
  */
-import { LayoutGrid, Moon, Search, Sun } from "lucide-react"
+import { Search } from "lucide-react"
 import * as React from "react"
-import { Button } from "@/components/ui/button"
 import { LabelsContext } from "@/lib/labels"
 import { ClassNamesContext } from "@/lib/classnames"
 import { NestedContext } from "@/lib/nested"
@@ -17,19 +16,31 @@ import { setTheme, usePageTheme, useSystemTheme } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 import type { PageConfig, PageItem, Row } from "../core/config"
 import { plainPage, type ResolvedSection, resolvePage, restorePage, slug, withItemIds } from "../core/layout"
-import { buildRelations } from "../core/relations"
+import type { RelationIndex } from "../core/relations"
 import type { SearchHit } from "../core/search"
 import type { ResolvedDeck } from "../core/resolve"
-import type { Issue } from "../core/validate"
+import { type RawIssue, sameIssue } from "../core/validate"
 import type { TableApi } from "../sdt/ClientDataTable"
 import type { RenderCtx } from "./cells"
 import { PageContext, type PageCtx } from "./Items"
 import { SegmentedTabs } from "./Tabs"
-import { ICON_BTN, LABEL_BTN, Tip, ToolbarLabelsContext } from "./Tip"
+import { ToolbarLabelsContext } from "./Tip"
 import { type LayoutOps, PageView } from "./Page"
+import { deckButtonsPart, relationsPart, sidebarPart } from "./parts"
 import { DeckEditTools, IssuesBox, OnDemand, preloadSearchWhenIdle, RowDrawer, SearchDialog } from "./lazy"
 import type { DrawerTarget } from "./RowDrawer"
 import type { SearchSource } from "./SearchDialog"
+
+/** No relations configured: every lookup is empty (and the relations chunk is never fetched). */
+const NO_RELATIONS: RelationIndex = { lookup: () => [], counts: () => [], find: () => [], linksFrom: () => [], invalid: [] }
+
+/** The deck's relation index, built with the loaded relations module. */
+function relationIndexOf(m: typeof import("../core/relations"), deck: ResolvedDeck): RelationIndex {
+	return m.buildRelations(
+		Object.fromEntries(deck.tables.map((t) => [t.name, t.rows])),
+		deck.relations.map((r) => ({ from: r.from, to: r.to, ...(r.label ? { label: r.label } : {}), ...(r.reverseLabel ? { reverseLabel: r.reverseLabel } : {}) })),
+	)
+}
 
 /** Layout edit functions (core/layout-edit.ts), an on-demand chunk shared with the editor tools; loaded when edit mode is switched on. */
 const layoutEdits = deferred(() => import("../core/layout-edit"))
@@ -64,7 +75,7 @@ const hashPage = () => hashRoute().page
 /** Typing in a field: page-level single-key shortcuts stay out of the way. */
 const isTyping = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))
 
-export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; configs: PageConfig[]; layoutIssues: Issue[] }) {
+export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; configs: PageConfig[]; layoutIssues: RawIssue[] }) {
 	const L = deck.labels
 	// One theme for the page: "inherit" follows <html data-theme>, "auto" the OS, light/dark pin this deck.
 	const pageThemeNow = usePageTheme()
@@ -81,7 +92,7 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 		originals.map((c, i) => (editable ? restorePage(c, storageGet(LAYOUT_KEY(ids[i] ?? ""))) : null) ?? c),
 	)
 	const resolved = React.useMemo(() => {
-		const issues: Issue[] = []
+		const issues: RawIssue[] = []
 		const pages = pageCfgs.map((c, i) => resolvePage(deck, { ...c, id: ids[i] }, i, issues))
 		return { pages, issues }
 		// ids derive from originals; pageCfgs and deck are the real inputs.
@@ -169,11 +180,15 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 		})
 	}
 
-	// Row drawer + relations.
-	const relIndex = React.useMemo(() => buildRelations(
-				Object.fromEntries(deck.tables.map((t) => [t.name, t.rows])),
-				deck.relations.map((r) => ({ from: r.from, to: r.to, ...(r.label ? { label: r.label } : {}), ...(r.reverseLabel ? { reverseLabel: r.reverseLabel } : {}) })),
-			), [deck])
+	// Row drawer + relations. The relation index (core/relations.ts) is an on-demand chunk, fetched right
+	// after the first render when the config has relations; nothing on the first paint needs it (link cells
+	// come from the resolved columns), only a click on a link, the drawer and expanded rows.
+	const hasRelations = deck.relations.length > 0
+	const relMod = relationsPart.use()
+	React.useEffect(() => {
+		if (hasRelations) preload(relationsPart)
+	}, [hasRelations])
+	const relIndex = React.useMemo(() => (hasRelations && relMod ? relationIndexOf(relMod, deck) : NO_RELATIONS), [deck, hasRelations, relMod])
 	const [drawer, setDrawer] = React.useState<DrawerTarget | null>(null)
 	const renderCtx = React.useMemo<RenderCtx>(
 		() => ({
@@ -183,11 +198,16 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 			statusColors: deck.statusColors,
 			badgeClass: deck.classNames.badge,
 			onRelation: (table, field, value) => {
-				const row = relIndex.find(table, field, value)[0]
-				if (row) setDrawer({ table, row })
+				const open = (idx: RelationIndex) => {
+					const row = idx.find(table, field, value)[0]
+					if (row) setDrawer({ table, row })
+				}
+				// A click in the moment before the index arrived: wait for it.
+				if (relIndex === NO_RELATIONS && hasRelations) relationsPart.load().then((m) => open(relationIndexOf(m, deck)), () => undefined)
+				else open(relIndex)
 			},
 		}),
-		[deck, relIndex],
+		[deck, relIndex, hasRelations],
 	)
 
 	const nestedCtx = React.useMemo(() => ({ deck, relIndex, renderCtx }), [deck, relIndex, renderCtx])
@@ -231,24 +251,24 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 
 	const showToggle = deck.config.themeToggle === true
 	const withLabels = deck.config.toolbarLabels === true
-	const toggle = showToggle ? (
-		<Tip label={dark ? L.lightMode : L.darkMode}>
-			<Button
-				variant="ghost"
-				size="icon-sm"
-				className={ICON_BTN}
-				aria-label={dark ? L.lightMode : L.darkMode}
-				data-jd="theme-toggle"
-				onClick={() => {
+	// Theme toggle and edit button (with their icons): an on-demand chunk, loaded before the first render
+	// of a deck that shows either (components/first-paint.ts).
+	const buttons = deckButtonsPart.use()
+	React.useEffect(() => {
+		if (showToggle || editable) preload(deckButtonsPart)
+	}, [showToggle, editable])
+	const toggle =
+		showToggle && buttons ? (
+			<buttons.ThemeToggle
+				dark={dark}
+				labels={L}
+				onToggle={() => {
 					// Flips the whole page (every deck), and drops this deck's own override.
 					setOverride("inherit")
 					setTheme(dark ? "light" : "dark")
 				}}
-			>
-				{dark ? <Sun className="jd:h-3.5 jd:w-3.5" /> : <Moon className="jd:h-3.5 jd:w-3.5" />}
-			</Button>
-		</Tip>
-	) : null
+			/>
+		) : null
 	const pf = pageFilters[current] ?? {}
 	const ctx: PageCtx | null = page
 		? {
@@ -280,7 +300,7 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 			}
 		: null
 	const sidebar = deck.config.nav === "sidebar" && ids.length > 1
-	const allIssues = [...deck.issues, ...layoutIssues, ...resolved.issues.filter((i) => !layoutIssues.some((l) => l.path === i.path && l.message === i.message))]
+	const allIssues = [...deck.issues, ...layoutIssues, ...resolved.issues.filter((i) => !layoutIssues.some((l) => sameIssue(l, i)))]
 	const showHeader = (ids.length > 1 && !sidebar) || editable
 
 	// Site search (⌘K / Ctrl+K anywhere; "/" on a page without a table, where "/" is free).
@@ -332,48 +352,18 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 		</button>
 	) : null
 
-	// Sidebar groups, in order of first appearance; ungrouped pages first.
-	const groups = React.useMemo(() => {
-		const out: { name: string | undefined; pages: typeof resolved.pages }[] = []
-		for (const p of resolved.pages) {
-			const g = out.find((x) => x.name === p.group)
-			if (g) g.pages.push(p)
-			else out.push({ name: p.group, pages: [p] })
-		}
-		return out
-	}, [resolved])
-
+	// The grouped sidebar is an on-demand chunk, loaded before the first render (components/first-paint.ts);
+	// a deck that switches to it later shows an empty column of the same width for the moment it takes.
+	const sidebarMod = sidebarPart.use()
+	React.useEffect(() => {
+		if (sidebar) preload(sidebarPart)
+	}, [sidebar])
 	const nav = sidebar ? (
-		<nav
-			className="jd:sticky jd:top-[calc(var(--jds-sticky-top)+8px)] jd:flex jd:max-h-[calc(100vh-var(--jds-sticky-top)-16px)] jd:w-56 jd:shrink-0 jd:flex-col jd:gap-0.5 jd:self-start jd:overflow-y-auto jd:overflow-x-hidden jd:max-md:static jd:max-md:max-h-none jd:max-md:w-full jd:max-md:flex-row jd:max-md:flex-wrap"
-			data-jd="pages-nav"
-		>
-			{searchButton && <div className="jd:mb-2 jd:max-md:w-full">{searchButton}</div>}
-			{groups.map((g) => (
-				<div key={g.name ?? ""} className="jd:flex jd:flex-col jd:gap-0.5 jd:pb-2 jd:max-md:flex-row jd:max-md:flex-wrap jd:max-md:items-center" data-jd="nav-group" data-jd-group-name={g.name}>
-					{g.name && <div className="jd:px-2.5 jd:pb-0.5 jd:text-[11px] jd:font-semibold jd:uppercase jd:tracking-wide jd:text-muted-foreground">{g.name}</div>}
-					{g.pages.map((p) => (
-				<a
-					key={p.id}
-					href={`#/${encodeURIComponent(p.id)}`}
-					data-jd-page-link={p.id}
-					title={p.title}
-					aria-current={p.id === current ? "page" : undefined}
-					onClick={(e) => {
-						e.preventDefault()
-						go(p.id)
-					}}
-					className={cn(
-						"jd:flex jd:h-7 jd:items-center jd:whitespace-nowrap jd:rounded-md jd:px-2.5 jd:text-[13px]",
-						p.id === current ? "jd:bg-card jd:text-foreground jd:font-medium" : "jd:text-muted-foreground jd:hover:text-foreground",
-					)}
-				>
-					<span className="jd:truncate">{p.title}</span>
-				</a>
-					))}
-				</div>
-			))}
-		</nav>
+		sidebarMod ? (
+			<sidebarMod.SidebarNav pages={resolved.pages} current={current} go={go} searchButton={searchButton} />
+		) : (
+			<nav data-jd="pages-nav" aria-busy="true" className="jd:w-56 jd:shrink-0 jd:max-md:w-full" />
+		)
 	) : (
 		<SegmentedTabs
 			dataJd="pages-nav"
@@ -414,22 +404,7 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 										<DeckEditTools copied={copied !== null} onCopy={copyConfig} onReset={resetLayout} />
 									</OnDemand>
 								)}
-								{editable && (
-									<Tip label={edit ? L.done : L.edit}>
-										<Button
-											variant={edit ? "default" : "ghost"}
-											size="sm"
-											aria-label={edit ? L.done : L.edit}
-											className={withLabels || edit ? LABEL_BTN : ICON_BTN}
-											data-jd="edit-toggle"
-											aria-pressed={edit}
-											onClick={() => setEdit((e) => !e)}
-										>
-											<LayoutGrid className="jd:h-3.5 jd:w-3.5" />
-											{(withLabels || edit) && (edit ? L.done : L.edit)}
-										</Button>
-									</Tip>
-								)}
+								{editable && buttons && <buttons.EditToggle edit={edit} withLabels={withLabels} labels={L} onToggle={() => setEdit((e) => !e)} />}
 								{toggle}
 							</div>
 						)}

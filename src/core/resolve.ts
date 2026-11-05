@@ -29,7 +29,6 @@ import {
 	type TableConfig,
 	THEMES,
 	type Theme,
-	TONES,
 	TYPE_ALIASES,
 	TYPEDEF_KEYS,
 	type TypeDef,
@@ -45,10 +44,10 @@ import {
 	type ViewsConfig,
 } from "./config"
 import { BUILTIN_FORMATS, parseFormat } from "./formats"
-import { CLASS_SLOTS, type ClassNames, THEME_TOKENS, TOKEN_NAMES, type ThemeTokens } from "./theme-tokens"
+import { CLASS_SLOTS, type ClassNames, TOKEN_NAMES, type ThemeTokens } from "./theme-tokens"
 import { collectKeys, DEFAULT_GUESS, enumValues, guessType, isEmpty } from "./guess"
 import { DEFAULT_ACRONYMS, DEFAULT_LABELS, humanize, type Labels } from "./labels"
-import { closest, type Issue, issue } from "./validate"
+import { issue, type RawIssue, sameIssue } from "./validate"
 
 /** Built-in per-type defaults (the last fallback). */
 type TypeDefault = { align: Align; filter: FilterKind; sort: SortKind; width?: number; tooltip?: boolean }
@@ -161,27 +160,27 @@ export type ResolvedDeck = {
 	guess: ResolvedGuess
 	acronyms: string[]
 	pageSizes: number[]
-	issues: Issue[]
+	issues: RawIssue[]
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === "object" && !Array.isArray(v)
 const isFn = (v: unknown): v is (...a: never[]) => unknown => typeof v === "function"
 
-function checkKeys(obj: Record<string, unknown>, allowed: string[], path: string, issues: Issue[]) {
-	for (const k of Object.keys(obj)) if (!allowed.includes(k)) issues.push(issue(`${path}${path ? "." : ""}${k}`, "unknown key", closest(k, allowed)))
+function checkKeys(obj: Record<string, unknown>, allowed: string[], path: string, issues: RawIssue[]) {
+	for (const k of Object.keys(obj)) if (!allowed.includes(k)) issues.push(issue(`${path}${path ? "." : ""}${k}`, "key", k, allowed))
 }
 
-function oneOf<T extends string>(v: unknown, allowed: readonly T[], path: string, issues: Issue[]): T | undefined {
+function oneOf<T extends string>(v: unknown, allowed: readonly T[], path: string, issues: RawIssue[]): T | undefined {
 	if (v === undefined) return undefined
 	if (typeof v === "string" && (allowed as readonly string[]).includes(v)) return v as T
-	issues.push(issue(path, `must be one of ${allowed.join(", ")}`, typeof v === "string" ? closest(v, [...allowed]) : undefined))
+	issues.push(issue(path, "oneOf", typeof v === "string" ? v : undefined, allowed))
 	return undefined
 }
 
-function posNum(v: unknown, path: string, issues: Issue[]): number | undefined {
+function posNum(v: unknown, path: string, issues: RawIssue[]): number | undefined {
 	if (v === undefined) return undefined
 	if (typeof v === "number" && v > 0 && Number.isFinite(v)) return v
-	issues.push(issue(path, "must be a positive number"))
+	issues.push(issue(path, "posNum"))
 	return undefined
 }
 
@@ -208,7 +207,7 @@ function autoWidth(label: string, values: unknown[], type: string): number {
 	return Math.round(Math.max(AUTO_WIDTH.min, header, content))
 }
 
-function parseSort(s: unknown, cols: Set<string>, path: string, issues: Issue[]): SortRule | null {
+function parseSort(s: unknown, cols: Set<string>, path: string, issues: RawIssue[]): SortRule | null {
 	let column: string | undefined
 	let direction: "asc" | "desc" = "asc"
 	if (typeof s === "string") {
@@ -219,11 +218,11 @@ function parseSort(s: unknown, cols: Set<string>, path: string, issues: Issue[])
 		direction = s.direction === "desc" ? "desc" : "asc"
 	}
 	if (!column) {
-		issues.push(issue(path, 'must be "column", "-column" or { column, direction }'))
+		issues.push(issue(path, "sortShape"))
 		return null
 	}
 	if (!cols.has(column)) {
-		issues.push(issue(path, `no such column "${column}"`, closest(column, [...cols])))
+		issues.push(issue(path, "noColumnQ", column, [...cols]))
 		return null
 	}
 	return { fieldId: column, direction }
@@ -236,10 +235,10 @@ function resolveColumn(
 	rows: Row[],
 	deck: Pick<ResolvedDeck, "types" | "guess" | "acronyms" | "formats">,
 	path: string,
-	issues: Issue[],
+	issues: RawIssue[],
 ): ResolvedColumn {
 	const cfg: ColumnConfig = typeof raw === "string" ? { type: raw } : isObj(raw) ? (raw as ColumnConfig) : {}
-	if (raw !== undefined && typeof raw !== "string" && !isObj(raw)) issues.push(issue(path, "must be a type name or an object"))
+	if (raw !== undefined && typeof raw !== "string" && !isObj(raw)) issues.push(issue(path, "typeOrObj"))
 	if (isObj(raw)) checkKeys(raw, COLUMN_KEYS, path, issues)
 	const computed = isFn(cfg.value)
 	const values = rows.slice(0, deck.guess.sampleSize).map((r) => r[id])
@@ -250,7 +249,7 @@ function resolveColumn(
 	if (cfg.type !== undefined) {
 		const t = TYPE_ALIASES[cfg.type] ?? cfg.type
 		if ((BUILTIN_TYPES as readonly string[]).includes(t) || t in deck.types) type = t
-		else issues.push(issue(`${path}.type`, `unknown type "${cfg.type}"`, closest(cfg.type, [...BUILTIN_TYPES, ...Object.keys(TYPE_ALIASES), ...Object.keys(deck.types)])))
+		else issues.push(issue(`${path}.type`, "unknownType", cfg.type, [...BUILTIN_TYPES, ...Object.keys(TYPE_ALIASES), ...Object.keys(deck.types)]))
 	}
 	const td: TypeDef = deck.types[type] ?? {}
 	const base = TYPE_DEFAULTS[type] ?? TEXT_DEFAULT
@@ -270,8 +269,8 @@ function resolveColumn(
 	}
 
 	if (cfg.colors !== undefined) {
-		if (!isObj(cfg.colors)) issues.push(issue(`${path}.colors`, "must be an object of value → colour"))
-		else for (const [v, c] of Object.entries(cfg.colors)) if (typeof c !== "string") issues.push(issue(`${path}.colors.${v}`, `must be a tone (${TONES.join(", ")}) or a CSS colour`))
+		if (!isObj(cfg.colors)) issues.push(issue(`${path}.colors`, "colorsObj"))
+		else for (const [v, c] of Object.entries(cfg.colors)) if (typeof c !== "string") issues.push(issue(`${path}.colors.${v}`, "tone"))
 	}
 
 	// Format: name must exist.
@@ -279,11 +278,11 @@ function resolveColumn(
 	if (typeof format === "string") {
 		const { name } = parseFormat(format)
 		if (!(name in deck.formats)) {
-			issues.push(issue(`${path}.format`, `unknown format "${name}"`, closest(name, Object.keys(deck.formats))))
+			issues.push(issue(`${path}.format`, "unknownFormat", name, Object.keys(deck.formats)))
 			format = undefined
 		}
 	} else if (format !== undefined && !isFn(format)) {
-		issues.push(issue(`${path}.format`, "must be a format name or a function"))
+		issues.push(issue(`${path}.format`, "formatShape"))
 		format = undefined
 	}
 	if (format === undefined && isFn(td.format)) {
@@ -311,7 +310,7 @@ function resolveColumn(
 	if (cfg.sort === false) sort = false
 	else if (isFn(cfg.sort)) sort = cfg.sort as Comparator
 	else if (cfg.sort !== undefined) {
-		issues.push(issue(`${path}.sort`, "must be false or a comparator function"))
+		issues.push(issue(`${path}.sort`, "sortFn"))
 		sort = base.sort
 	} else if (td.sort !== undefined) sort = td.sort
 	else sort = order ? "order" : base.sort
@@ -353,9 +352,9 @@ let filterSeq = 0
 /** Resolve one table. */
 type DeckBase = Pick<ResolvedDeck, "types" | "guess" | "acronyms" | "formats" | "pageSizes" | "relations">
 
-function resolveTable(name: string, rows: Row[], raw: TableConfig | undefined, cfg: JsonDeckConfig, deck: DeckBase, issues: Issue[], path = `tables.${name}`): ResolvedTable | null {
+function resolveTable(name: string, rows: Row[], raw: TableConfig | undefined, cfg: JsonDeckConfig, deck: DeckBase, issues: RawIssue[], path = `tables.${name}`): ResolvedTable | null {
 	const t: TableConfig = isObj(raw) ? raw : {}
-	if (raw !== undefined && !isObj(raw)) issues.push(issue(path, "must be an object"))
+	if (raw !== undefined && !isObj(raw)) issues.push(issue(path, "object"))
 	if (isObj(raw)) checkKeys(raw, TABLE_KEYS, path, issues)
 	if (t.hidden === true) return null
 
@@ -366,7 +365,7 @@ function resolveTable(name: string, rows: Row[], raw: TableConfig | undefined, c
 	const computedIds = Object.keys(colCfg).filter((id) => !dataKeys.includes(id) && isObj(colCfg[id]) && isFn((colCfg[id] as ColumnConfig).value))
 	for (const id of Object.keys(colCfg))
 		if (!dataKeys.includes(id) && !computedIds.includes(id))
-			issues.push(issue(`${path}.columns.${id}`, "no such column", closest(id, dataKeys)))
+			issues.push(issue(`${path}.columns.${id}`, "noColumn", id, dataKeys))
 
 	// Materialise computed values so filter/sort/search treat them like data.
 	const fullRows = computedIds.length
@@ -387,13 +386,13 @@ function resolveTable(name: string, rows: Row[], raw: TableConfig | undefined, c
 	const checkList = (v: unknown, key: string): string[] | undefined => {
 		if (v === undefined) return undefined
 		if (!Array.isArray(v)) {
-			issues.push(issue(`${path}.${key}`, "must be a list of column ids"))
+			issues.push(issue(`${path}.${key}`, "idList"))
 			return undefined
 		}
 		const ok: string[] = []
 		for (const id of v) {
 			if (ids.includes(String(id))) ok.push(String(id))
-			else issues.push(issue(`${path}.${key}`, `no such column "${id}"`, closest(String(id), ids)))
+			else issues.push(issue(`${path}.${key}`, "noColumnQ", String(id), ids))
 		}
 		return ok
 	}
@@ -417,7 +416,7 @@ function resolveTable(name: string, rows: Row[], raw: TableConfig | undefined, c
 	let key: string | undefined
 	if (t.key !== undefined) {
 		if (typeof t.key === "string" && colSet.has(t.key)) key = t.key
-		else issues.push(issue(`${path}.key`, `no such column "${String(t.key)}"`, closest(String(t.key), [...colSet])))
+		else issues.push(issue(`${path}.key`, "noColumnQ", String(t.key), [...colSet]))
 	}
 
 	let search: ResolvedTable["search"] = { columns: columns.filter((c) => c.search).map((c) => c.id) }
@@ -425,28 +424,28 @@ function resolveTable(name: string, rows: Row[], raw: TableConfig | undefined, c
 	else if (isObj(t.search)) {
 		const list = checkList(t.search.columns, "search.columns")
 		if (list) search = { columns: list }
-	} else if (t.search !== undefined) issues.push(issue(`${path}.search`, "must be false or { columns: [...] }"))
+	} else if (t.search !== undefined) issues.push(issue(`${path}.search`, "searchShape"))
 
 	const defaultSort = Array.isArray(t.defaultSort)
 		? t.defaultSort.map((s, i) => parseSort(s, colSet, `${path}.defaultSort[${i}]`, issues)).filter((s): s is SortRule => !!s)
 		: []
-	if (t.defaultSort !== undefined && !Array.isArray(t.defaultSort)) issues.push(issue(`${path}.defaultSort`, "must be a list"))
+	if (t.defaultSort !== undefined && !Array.isArray(t.defaultSort)) issues.push(issue(`${path}.defaultSort`, "list"))
 
 	const defaultFilters: FilterCondition[] = []
 	if (Array.isArray(t.defaultFilters)) {
 		t.defaultFilters.forEach((f, i) => {
 			const p = `${path}.defaultFilters[${i}]`
-			if (!isObj(f) || typeof f.column !== "string") return issues.push(issue(p, "must be { column, operator, value }"))
+			if (!isObj(f) || typeof f.column !== "string") return issues.push(issue(p, "filterShape"))
 			const col = columns.find((c) => c.id === f.column)
-			if (!col) return issues.push(issue(`${p}.column`, `no such column "${f.column}"`, closest(f.column, [...colSet])))
-			if (!col.filter) return issues.push(issue(p, `column "${f.column}" has filter: false`))
+			if (!col) return issues.push(issue(`${p}.column`, "noColumnQ", f.column, [...colSet]))
+			if (!col.filter) return issues.push(issue(p, "filterOff", f.column))
 			const multi = col.filter.type === "multi-select"
 			const operator = (f.operator as FilterOperator | undefined) ?? (multi ? "in" : col.filter.type === "number" ? "eq" : col.filter.type === "boolean" ? "is" : "contains")
 			const value = multi && !Array.isArray(f.value) && f.value !== undefined ? [f.value] : f.value
 			filterSeq += 1
 			defaultFilters.push({ id: `df${filterSeq}`, fieldId: f.column, operator, value })
 		})
-	} else if (t.defaultFilters !== undefined) issues.push(issue(`${path}.defaultFilters`, "must be a list"))
+	} else if (t.defaultFilters !== undefined) issues.push(issue(`${path}.defaultFilters`, "list"))
 
 	const pageSizes = deck.pageSizes
 	return {
@@ -467,16 +466,16 @@ function resolveTable(name: string, rows: Row[], raw: TableConfig | undefined, c
 		expand: t.expand === false ? false : t.expand === "drawer" ? "drawer" : t.expand === "inline" || isObj(t.expand) || isObj(t.detail) ? "inline" : false,
 		expandRelation: isObj(t.expand) && typeof t.expand.relation === "string" ? t.expand.relation : undefined,
 		detail: isObj(t.detail) ? t.detail : undefined,
-		groupBy: (typeof t.groupBy === "string" ? [t.groupBy] : Array.isArray(t.groupBy) ? t.groupBy : []).filter((c) => colSet.has(c) || !issues.push(issue(`${path}.groupBy`, `no such column "${c}"`, closest(c, [...colSet])))),
+		groupBy: (typeof t.groupBy === "string" ? [t.groupBy] : Array.isArray(t.groupBy) ? t.groupBy : []).filter((c) => colSet.has(c) || !issues.push(issue(`${path}.groupBy`, "noColumnQ", c, [...colSet]))),
 		groupAggregates: Object.fromEntries(
 			Object.entries(isObj(t.groupAggregates) ? t.groupAggregates : {}).filter(
-				([c, a]) => (colSet.has(c) && (GROUP_AGGREGATES as readonly string[]).includes(a)) || !issues.push(issue(`${path}.groupAggregates.${c}`, colSet.has(c) ? `must be one of ${GROUP_AGGREGATES.join(", ")}` : "no such column", colSet.has(c) ? undefined : closest(c, [...colSet]))),
+				([c, a]) => (colSet.has(c) && (GROUP_AGGREGATES as readonly string[]).includes(a)) || !issues.push(colSet.has(c) ? issue(`${path}.groupAggregates.${c}`, "oneOf", undefined, GROUP_AGGREGATES) : issue(`${path}.groupAggregates.${c}`, "noColumn", c, [...colSet])),
 			),
 		),
 		quickFilters: (Array.isArray(t.quickFilters) ? t.quickFilters : []).filter(
 			(q, i) =>
 				(isObj(q) && colSet.has(q.column) && (QUICK_FILTER_KINDS as readonly string[]).includes(q.kind)) ||
-				!issues.push(issue(`${path}.quickFilters[${i}]`, isObj(q) && !colSet.has(q.column) ? `no such column "${q.column}"` : `must be { column, kind: ${QUICK_FILTER_KINDS.join(" | ")} }`)),
+				!issues.push(isObj(q) && !colSet.has(q.column) ? issue(`${path}.quickFilters[${i}]`, "noColumnQ", String(q.column)) : issue(`${path}.quickFilters[${i}]`, "quickShape")),
 		),
 		selectable: t.selectable === true,
 		classNames: classNamesOf(t.classNames, `${path}.classNames`, issues),
@@ -488,7 +487,7 @@ function resolveTable(name: string, rows: Row[], raw: TableConfig | undefined, c
 
 /** Data + config → the fully resolved deck (plus every config issue found). */
 export function resolveDeck(config: Partial<JsonDeckConfig> = {}): ResolvedDeck {
-	const issues: Issue[] = []
+	const issues: RawIssue[] = []
 	const cfg = (isObj(config) ? config : {}) as JsonDeckConfig
 	checkKeys(cfg, GLOBAL_KEYS, "", issues)
 
@@ -501,14 +500,14 @@ export function resolveDeck(config: Partial<JsonDeckConfig> = {}): ResolvedDeck 
 		longTextLen: posNum(g.longTextLen, "guess.longTextLen", issues) ?? DEFAULT_GUESS.longTextLen,
 		sampleSize: posNum(g.sampleSize, "guess.sampleSize", issues) ?? DEFAULT_GUESS.sampleSize,
 		knownOrders: Array.isArray(g.knownOrders) ? g.knownOrders : DEFAULT_GUESS.knownOrders,
-		detectors: Array.isArray(g.detectors) ? g.detectors.filter((d, i) => (isObj(d) && typeof d.type === "string" && isFn(d.test)) || !issues.push(issue(`guess.detectors[${i}]`, "must be { type, test(values) }"))) : [],
+		detectors: Array.isArray(g.detectors) ? g.detectors.filter((d, i) => (isObj(d) && typeof d.type === "string" && isFn(d.test)) || !issues.push(issue(`guess.detectors[${i}]`, "detector"))) : [],
 	}
 
 	const types: Record<string, TypeDef> = {}
 	if (isObj(cfg.types))
 		for (const [name, td] of Object.entries(cfg.types)) {
 			if (!isObj(td)) {
-				issues.push(issue(`types.${name}`, "must be an object"))
+				issues.push(issue(`types.${name}`, "object"))
 				continue
 			}
 			checkKeys(td, TYPEDEF_KEYS, `types.${name}`, issues)
@@ -516,20 +515,20 @@ export function resolveDeck(config: Partial<JsonDeckConfig> = {}): ResolvedDeck 
 		}
 	for (const d of guess.detectors)
 		if (!(BUILTIN_TYPES as readonly string[]).includes(d.type) && !(d.type in types))
-			issues.push(issue("guess.detectors", `detector type "${d.type}" is not built in or registered in types (shown as text)`))
+			issues.push(issue("guess.detectors", "detectorType", d.type))
 
 	const labels = { ...DEFAULT_LABELS }
 	if (isObj(cfg.labels))
 		for (const [k, v] of Object.entries(cfg.labels)) {
-			if (!(k in DEFAULT_LABELS)) issues.push(issue(`labels.${k}`, "unknown label", closest(k, Object.keys(DEFAULT_LABELS))))
+			if (!(k in DEFAULT_LABELS)) issues.push(issue(`labels.${k}`, "label", k, Object.keys(DEFAULT_LABELS)))
 			else if (typeof v === "string") (labels as Record<string, string>)[k] = v
 		}
 
 	const pageSizes = Array.isArray(cfg.pageSizes) && cfg.pageSizes.every((n) => typeof n === "number" && n > 0) ? cfg.pageSizes : DEFAULT_PAGE_SIZES
-	if (cfg.pageSizes !== undefined && pageSizes === DEFAULT_PAGE_SIZES) issues.push(issue("pageSizes", "must be a list of positive numbers"))
+	if (cfg.pageSizes !== undefined && pageSizes === DEFAULT_PAGE_SIZES) issues.push(issue("pageSizes", "pageSizes"))
 	posNum(cfg.pageSize, "pageSize", issues)
 
-	const relations: RelationConfig[] = Array.isArray(cfg.relations) ? cfg.relations.filter((r, i) => (isObj(r) && typeof r.from === "string" && typeof r.to === "string") || !issues.push(issue(`relations[${i}]`, 'must be { from: "table.column", to: "table.column" }'))) : []
+	const relations: RelationConfig[] = Array.isArray(cfg.relations) ? cfg.relations.filter((r, i) => (isObj(r) && typeof r.from === "string" && typeof r.to === "string") || !issues.push(issue(`relations[${i}]`, "relationShape"))) : []
 	const deckBase = {
 		relations,
 		types,
@@ -542,10 +541,10 @@ export function resolveDeck(config: Partial<JsonDeckConfig> = {}): ResolvedDeck 
 	const all = toTableData(cfg.data)
 	const names = Object.keys(all)
 	const tcfg: Record<string, TableConfig> = isObj(cfg.tables) ? cfg.tables : {}
-	for (const n of Object.keys(tcfg)) if (!names.includes(n)) issues.push(issue(`tables.${n}`, "no such table", closest(n, names)))
+	for (const n of Object.keys(tcfg)) if (!names.includes(n)) issues.push(issue(`tables.${n}`, "noTable", n, names))
 	let order = names
 	if (Array.isArray(cfg.tableOrder)) {
-		const listed = cfg.tableOrder.filter((n) => names.includes(n) || !issues.push(issue("tableOrder", `no such table "${n}"`, closest(n, names))))
+		const listed = cfg.tableOrder.filter((n) => names.includes(n) || !issues.push(issue("tableOrder", "noTableQ", n, names)))
 		order = [...listed, ...names.filter((n) => !listed.includes(n))]
 	}
 	const tables = order.map((n) => resolveTable(n, all[n] ?? [], tcfg[n], cfg, deckBase, issues)).filter((t): t is ResolvedTable => !!t)
@@ -554,8 +553,8 @@ export function resolveDeck(config: Partial<JsonDeckConfig> = {}): ResolvedDeck 
 		for (const side of ["from", "to"] as const) {
 			const [tn, ...fp] = r[side].split(".")
 			const tb = tables.find((t) => t.name === tn)
-			if (!tb) issues.push(issue(`relations[${i}].${side}`, `no such table "${tn}"`, closest(tn ?? "", names)))
-			else if (!tb.columns.some((c) => c.id === fp.join("."))) issues.push(issue(`relations[${i}].${side}`, `no such column "${fp.join(".")}" in ${tn}`, closest(fp.join("."), tb.columns.map((c) => c.id))))
+			if (!tb) issues.push(issue(`relations[${i}].${side}`, "noTableQ", tn ?? "", names))
+			else if (!tb.columns.some((c) => c.id === fp.join("."))) issues.push(issue(`relations[${i}].${side}`, "noColumnIn", fp.join("."), tb.columns.map((c) => c.id), tn))
 		}
 
 	return {
@@ -578,77 +577,6 @@ export function resolveDeck(config: Partial<JsonDeckConfig> = {}): ResolvedDeck 
 	}
 }
 
-/** Drop functions and undefined, recursively, so a resolved value is plain JSON. */
-function plain(v: unknown): unknown {
-	if (isFn(v) || v === undefined) return undefined
-	if (Array.isArray(v)) return v.map(plain).filter((x) => x !== undefined)
-	if (isObj(v)) {
-		const out: Record<string, unknown> = {}
-		for (const [k, x] of Object.entries(v)) {
-			const p = plain(x)
-			if (p !== undefined) out[k] = p
-		}
-		return out
-	}
-	return v
-}
-
-/**
- * The resolved config as plain JSON in the same shape as the input config
- * (functions left out), so it can be copied, edited and passed back.
- */
-export function describeDeck(d: ResolvedDeck): Record<string, unknown> {
-	const tables: Record<string, unknown> = {}
-	for (const t of d.tables) {
-		const columns: Record<string, unknown> = {}
-		for (const c of t.columns) {
-			columns[c.id] = plain({
-				type: c.type,
-				label: c.label,
-				hidden: c.hidden || undefined,
-				width: c.width,
-				minWidth: c.minWidth,
-				pin: c.pin,
-				align: c.align,
-				wrap: c.wrap || undefined,
-				className: c.className,
-				tooltip: typeof c.tooltip === "boolean" ? c.tooltip : undefined,
-				format: typeof c.format === "string" ? c.format : undefined,
-				link: typeof c.link === "string" ? c.link : undefined,
-				order: c.order,
-				colors: c.colors,
-				filter: c.filter === false ? false : { type: c.filter.type, options: c.filter.options?.map((o) => o.value), operators: c.filter.operators },
-				sort: c.sort === false ? false : undefined,
-				search: c.search ? undefined : false,
-				computed: c.computed || undefined,
-			})
-		}
-		tables[t.name] = plain({
-			label: t.label,
-			key: t.key,
-			columnOrder: t.columns.map((c) => c.id),
-			pageSize: t.pageSize,
-			search: t.search,
-			filters: t.filters ? undefined : false,
-			views: t.views === false ? false : undefined,
-			defaultSort: t.defaultSort.map((s) => (s.direction === "desc" ? `-${s.fieldId}` : s.fieldId)),
-			defaultFilters: t.defaultFilters.map((f) => ({ column: f.fieldId, operator: f.operator, value: f.value })),
-			columns,
-		})
-	}
-	return plain({
-		theme: d.theme,
-		tableOrder: d.tables.map((t) => t.name),
-		pageSizes: d.pageSizes,
-		acronyms: d.acronyms,
-		guess: d.guess,
-		formats: Object.keys(d.formats),
-		types: Object.keys(d.types),
-		labels: d.labels,
-		tables,
-	}) as Record<string, unknown>
-}
-
 /** Deep-merge a placement's overrides onto the dataset's table config (columns merged per column). */
 export function mergeTableConfig(base: TableConfig | undefined, over: Partial<TableConfig>): TableConfig {
 	const b: TableConfig = base ?? {}
@@ -665,53 +593,52 @@ export function mergeTableConfig(base: TableConfig | undefined, over: Partial<Ta
  * Resolve one placement of a dataset: dataset spec → placement overrides →
  * resolved table. Pure; called once per table component on a page.
  */
-export function resolvePlacement(deck: ResolvedDeck, table: string, over: Partial<TableConfig>, issues: Issue[], path: string): ResolvedTable | null {
+export function resolvePlacement(deck: ResolvedDeck, table: string, over: Partial<TableConfig>, issues: RawIssue[], path: string): ResolvedTable | null {
 	const rows = deck.datasets[table]
 	if (!rows) {
-		issues.push(issue(`${path}.table`, `no such table "${table}"`, closest(table, Object.keys(deck.datasets))))
+		issues.push(issue(`${path}.table`, "noTableQ", table, Object.keys(deck.datasets)))
 		return null
 	}
 	// The merged config repeats the dataset's own settings; report only what the placement adds.
-	const local: Issue[] = []
+	const local: RawIssue[] = []
 	const out = resolveTable(table, rows, mergeTableConfig(deck.tableConfigs[table], over), deck.config, deck, local, path)
 	const datasetPath = `tables.${table}`
 	for (const i of local) {
 		const tail = i.path.startsWith(path) ? i.path.slice(path.length) : null
-		if (tail !== null && deck.issues.some((d) => d.path === `${datasetPath}${tail}` && d.message === i.message)) continue
+		if (tail !== null && deck.issues.some((d) => sameIssue(d, { ...i, path: `${datasetPath}${tail}` }))) continue
 		issues.push(i)
 	}
 	return out
 }
 
-/** Validated token overrides: names must be in THEME_TOKENS, values strings. */
-function tokensOf(raw: unknown, path: string, issues: Issue[]): ThemeTokens {
+/** Validated token overrides: names must be in TOKEN_NAMES, values strings. */
+function tokensOf(raw: unknown, path: string, issues: RawIssue[]): ThemeTokens {
 	const out: ThemeTokens = {}
 	if (raw === undefined) return out
 	if (!isObj(raw)) {
-		issues.push(issue(path, "must be an object of token → value"))
+		issues.push(issue(path, "tokensObj"))
 		return out
 	}
-	const names = Object.keys(THEME_TOKENS)
 	for (const [k, v] of Object.entries(raw)) {
 		const name = TOKEN_NAMES.find((n) => n === k)
-		if (!name) issues.push(issue(`${path}.${k}`, "unknown theme token", closest(k, names)))
-		else if (typeof v !== "string") issues.push(issue(`${path}.${k}`, "must be a CSS value (string)"))
+		if (!name) issues.push(issue(`${path}.${k}`, "token", k, TOKEN_NAMES))
+		else if (typeof v !== "string") issues.push(issue(`${path}.${k}`, "cssValue"))
 		else out[name] = v
 	}
 	return out
 }
 
 /** Validated class-name slots (see CLASS_SLOTS). */
-function classNamesOf(raw: unknown, path: string, issues: Issue[]): ClassNames {
+function classNamesOf(raw: unknown, path: string, issues: RawIssue[]): ClassNames {
 	const out: ClassNames = {}
 	if (raw === undefined) return out
 	if (!isObj(raw)) {
-		issues.push(issue(path, "must be an object of slot → class names"))
+		issues.push(issue(path, "slotsObj"))
 		return out
 	}
 	for (const [k, v] of Object.entries(raw)) {
 		const slot = CLASS_SLOTS.find((x) => x === k)
-		if (!slot) issues.push(issue(`${path}.${k}`, "unknown class slot", closest(k, [...CLASS_SLOTS])))
+		if (!slot) issues.push(issue(`${path}.${k}`, "slot", k, CLASS_SLOTS))
 		else if (typeof v === "string") out[slot] = v
 	}
 	return out

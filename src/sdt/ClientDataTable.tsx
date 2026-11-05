@@ -7,27 +7,21 @@ import { fill, plural } from "../core/labels"
 import type { ResolvedTable } from "../core/resolve"
 import { orderColumns, pageSlice, visibleColumns as dropHidden } from "../core/columns"
 import { applyQuery, type Row } from "../core/query"
-import { useColumnResize } from "./columns/useColumnResize"
 import { FilterBar } from "./filters/FilterBar"
 import { useShortcuts } from "./keyboard/useShortcuts"
 import { NumberedPaginationBar } from "./pagination/NumberedPaginationBar"
-import { initialTableState } from "./state/reducer"
 import { useTableState } from "./state/useTableState"
-import { EmptyState } from "./table/EmptyState"
 import { ColumnHeaderMenu, ColumnVisibilityMenu, GroupByMenu, MoreMenu, PageSizeSelect, ShortcutsHelp, SortDropdown, TableExportButton } from "./toolbar/controls"
 import type { CsvField } from "./toolbar/csv"
 import { ChevronRight } from "lucide-react"
 import { mergeClassNames, useClassNames } from "@/lib/classnames"
 import { useNested } from "@/lib/nested"
-import { fillTemplate, formatValue } from "../components/cells"
-import type { MenuItem } from "../components/ContextMenu"
-import { ContextMenu, OnDemand, QuickFilters, RowDetail, SelectionBar } from "../components/lazy"
-import { toast } from "../components/Toast"
-import { COPY_FORMATS, type CopyFormat, copyText } from "../core/copy"
+import { EmptyState, OnDemand, QuickFilters, RowDetail, RowMenu, SelectionBar } from "../components/lazy"
+import type { CopyFormat } from "../core/copy"
 import type { GroupNode } from "../core/group"
 import { deferred, preload } from "@/components/ui/deferred"
-import { toText } from "../core/query"
-import { formatLabel, MAX_DEPTH } from "./rows/row-shared"
+import { popups } from "@/components/ui/popups-handle"
+import { MAX_DEPTH } from "./rows/row-shared"
 import type { DataTableColumn, FilterCondition, SortRule, ToolbarCtx } from "./types"
 
 /**
@@ -45,13 +39,6 @@ const SPECIAL_W = 32
 /** One line of the table body: a group header or a data row. */
 type Entry = { kind: "group"; node: GroupNode; path: string; open: boolean } | { kind: "row"; row: Row }
 
-/** A frozen column's edge: a border on the side facing the scrolling columns (no shadow: blocks separate by border only). */
-function pinEdge(pin: "left" | "right" | undefined): string | undefined {
-	if (pin === "left") return "jd:border-r"
-	if (pin === "right") return "jd:border-l"
-	return undefined
-}
-
 /** A cell as a CSV value: objects as JSON, the rest as is. */
 function csvValue(v: unknown): string | number | boolean | null | undefined {
 	if (v === null || v === undefined || typeof v === "string" || typeof v === "number" || typeof v === "boolean") return v
@@ -59,19 +46,43 @@ function csvValue(v: unknown): string | number | boolean | null | undefined {
 }
 
 /**
- * Row grouping (core/group.ts with the aggregates), an on-demand chunk loaded
+ * Row grouping (core/group.ts with the aggregates, and the group header row), an on-demand chunk loaded
  * when a table is first grouped; until it arrives the rows show ungrouped.
  */
-const grouping = deferred(() => import("../core/group"))
+const grouping = deferred(() => import("./rows/grouping"))
 
-/** The row serializers (core/clipboard.ts), an on-demand chunk; the browser caches the module after the first call. */
-const loadClipboard = () => import("../core/clipboard")
+/** Copy with a toast, plus the row serializers (rows/copy-rows.ts), an on-demand chunk; the module is cached after the first call. */
+const loadCopy = () => import("./rows/copy-rows")
 
 /** Ids for filters added from the page (charts, facets). */
 let filterSeq = 0
 import type { ViewStorage } from "./views/storage/ViewStorage"
-import { useSavedViews } from "./views/useSavedViews"
-import { ViewSelector } from "./toolbar/controls"
+import { columnDragPart, keyboardPart, pinningPart, viewsPart } from "../components/parts"
+import { viewsScope } from "../core/views-key"
+import { ViewsTrigger, viewsTip } from "./toolbar/triggers"
+import { Tip } from "../components/Tip"
+import { deferredControl } from "@/components/ui/deferred"
+import type { ViewsControlProps } from "./views/ViewsControl"
+
+/** No pinned columns: nothing sticky. */
+const NO_PINS: ReadonlyMap<string, React.CSSProperties> = new Map()
+
+/**
+ * The Views control (saved views chunk). Until it is there, the same trigger
+ * with no view active; hover / focus / click loads it, and a cold click is
+ * replayed on the real one. Pointing at it also starts the menu's own chunk.
+ */
+const ViewsControl = deferredControl(viewsPart, (m) => m.ViewsControl, function ViewsStand(p: ViewsControlProps) {
+	const L = useLabels()
+	const modified = p.state.search !== "" || p.state.filters.length > 0 || p.state.sort.length > 0
+	return (
+		<span className="jd:contents" onPointerEnter={() => preload(popups)} onFocus={() => preload(popups)}>
+			<Tip label={viewsTip(L, undefined)} hint="v">
+				<ViewsTrigger activeName={undefined} modified={modified} />
+			</Tip>
+		</span>
+	)
+})
 
 const DEFAULT_COL_SIZE = 160
 
@@ -140,46 +151,28 @@ export function ClientDataTable(props: ClientDataTableProps) {
 	const cls_ = mergeClassNames(useClassNames(), table.classNames)
 	const renderCtx = useNested()?.renderCtx ?? { types: {}, renderers: {}, formats: {} }
 
+	// ── Saved views (an on-demand chunk) ─────────────────────────────────
+	const enableViews = viewsConfig !== false && !compact
+	const customStorage = viewsConfig === false ? undefined : viewsConfig.storage
+	const viewsMod = viewsPart.use()
+	// A stored default view: the chunk was loaded before the first render (components/first-paint.ts), so the table opens on it.
+	const [openedOnDefault] = React.useState(() =>
+		enableViews && !customStorage && viewsMod ? viewsMod.readDefaultView(viewsScope(scope)) : null,
+	)
+	// A custom storage lists its views asynchronously: fetch the chunk now so its default view applies.
+	React.useEffect(() => {
+		if (enableViews && customStorage) preload(viewsPart)
+	}, [enableViews, customStorage])
+
 	const { state, actions } = useTableState({
 		defaultSort: table.defaultSort,
 		// Columns with `hidden: true` start hidden (and so become the expanded row's detail by default).
-		initial: { pageSize: table.pageSize, filters: table.defaultFilters, groupBy: table.groupBy, hiddenColumns: table.columns.filter((c) => c.hidden).map((c) => c.id) },
+		initial:
+			openedOnDefault && viewsMod
+				? viewsMod.viewState(openedOnDefault, table.groupBy, table.pageSize)
+				: { pageSize: table.pageSize, filters: table.defaultFilters, groupBy: table.groupBy, hiddenColumns: table.columns.filter((c) => c.hidden).map((c) => c.id) },
 	})
 	const rootRef = React.useRef<HTMLDivElement>(null)
-
-	// ── Saved views ──────────────────────────────────────────────────────
-	const enableViews = viewsConfig !== false && !compact
-	const {
-		views,
-		save: saveView,
-		remove: removeView,
-		setDefault: setDefaultView,
-		setFavorite: setViewFavorite,
-	} = useSavedViews({ scope: `jsondeck:${scope}`, storage: enableViews ? viewsConfig.storage : undefined })
-
-	// Apply the default view once, when storage has loaded.
-	const didApplyDefaultRef = React.useRef(false)
-	React.useEffect(() => {
-		if (didApplyDefaultRef.current) return
-		const def = views.find((v) => v.isDefault)
-		if (def) {
-			didApplyDefaultRef.current = true
-			actions.replaceState(
-				initialTableState({
-					search: def.state.search,
-					filters: def.state.filters,
-					sort: def.state.sort,
-					hiddenColumns: def.state.hiddenColumns ?? [],
-					columnOrder: def.state.columnOrder ?? [],
-					columnSizes: def.state.columnSizes ?? {},
-					groupBy: def.state.groupBy ?? table.groupBy,
-					detailColumns: def.state.detailColumns ?? null,
-					pageSize: state.pageSize,
-					viewId: def.id,
-				}),
-			)
-		} else if (views.length > 0) didApplyDefaultRef.current = true
-	}, [views, actions, state.pageSize])
 
 	// ── The in-memory query: search + filters + multi-sort ───────────────
 	// A master's selection narrows the rows before search and filters.
@@ -267,56 +260,17 @@ export function ClientDataTable(props: ClientDataTableProps) {
 	}, [state.detailColumns, state.hiddenColumns, table.columns, table.detail])
 	const detailFields = React.useMemo(() => detailIds.flatMap((id) => table.columns.filter((c) => c.id === id)), [detailIds, table.columns])
 
-	// Copy (context menu / selection bar), with a toast on every copy. The serializers are an
-	// on-demand chunk, preloaded when the menu opens or rows get selected, so by the time a
-	// format is picked the import resolves at once and the copy still runs in the user's click.
-	const copyRows = async (list: Row[], fmt: CopyFormat) => {
-		const { serializeRows } = await loadClipboard()
-		const ok = await copyText(serializeRows(fmt, list, table.columns))
-		toast(ok ? fill(plural(L, list.length, "copiedRows", "copiedRowsOne"), { n: list.length, fmt: formatLabel(L, fmt) }) : L.copyFailed, { kind: ok ? "success" : "error" })
+	// Copy (context menu / selection bar), with a toast on every copy. The copy helpers and serializers are an
+	// on-demand chunk, preloaded when the menu opens or rows get selected, so by the time a format is picked
+	// the import resolves at once and the copy still runs in the user's click.
+	const copyRows = (list: Row[], fmt: CopyFormat) => {
+		loadCopy().then((m) => m.copyRowsAs(list, fmt, table.columns, L), () => undefined)
 	}
 	const [menu, setMenu] = React.useState<{ x: number; y: number; row: Row; col?: string | undefined } | null>(null)
-	// Preload the serializers as soon as a copy is possible (menu open, rows selected).
 	const copyPossible = menu !== null || selection.size > 0
 	React.useEffect(() => {
-		if (copyPossible) loadClipboard().catch(() => undefined)
+		if (copyPossible) loadCopy().catch(() => undefined)
 	}, [copyPossible])
-	const menuItems = (row: Row, colId: string | undefined): MenuItem[] => {
-		const items: MenuItem[] = []
-		const spec = colId ? table.columns.find((c) => c.id === colId) : undefined
-		if (spec) {
-			items.push({ label: L.copyCell, onSelect: async () => {
-				const { cellText } = await loadClipboard()
-				const ok = await copyText(cellText(row, spec))
-				toast(ok ? L.copiedCell : L.copyFailed, { kind: ok ? "success" : "error" })
-			} })
-		}
-		items.push({ label: L.copyRowAs, submenu: COPY_FORMATS.map((f) => ({ label: formatLabel(L, f), onSelect: () => void copyRows([row], f) })) })
-		if (selection.size > 0) items.push({ label: fill(L.copySelectedAs, { n: selection.size }), submenu: COPY_FORMATS.map((f) => ({ label: formatLabel(L, f), onSelect: () => void copyRows([...selection], f) })) })
-		const ff = colId ? filterFields.find((f) => f.id === colId) : undefined
-		if (spec && ff && row[spec.id] !== undefined && row[spec.id] !== null && row[spec.id] !== "") {
-			const v = toText(row[spec.id])
-			const multi = ff.type === "multi-select"
-			items.push({ separator: true })
-			items.push({ label: L.filterByValue, onSelect: () => { filterSeq += 1; actions.addFilter({ id: `cm${filterSeq}`, fieldId: spec.id, operator: multi ? "in" : ff.type === "number" ? "eq" : ff.type === "boolean" ? "is" : "eq", value: multi ? [v] : ff.type === "number" ? Number(v) : ff.type === "boolean" ? v === "true" : v }) } })
-			items.push({ label: L.excludeValue, onSelect: () => { filterSeq += 1; actions.addFilter({ id: `cm${filterSeq}`, fieldId: spec.id, operator: multi ? "notIn" : ff.type === "boolean" ? "isNot" : "neq", value: multi ? [v] : ff.type === "number" ? Number(v) : ff.type === "boolean" ? v === "true" : v }) } })
-		}
-		items.push({ separator: true })
-		if (expandInline) items.push({ label: expanded.has(row) ? L.collapseRow : L.expandRow, kbd: "Enter", onSelect: () => toggleExpand(row) })
-		if (onRowOpen) items.push({ label: L.openDetail, onSelect: () => onRowOpen(row) })
-		if (spec && typeof spec.link === "string") {
-			const href = fillTemplate(spec.link, row)
-			items.push({ label: L.copyLink, onSelect: async () => {
-				const ok = await copyText(href)
-				toast(ok ? L.copiedLink : L.copyFailed, { kind: ok ? "success" : "error" })
-			} })
-		}
-		if (table.rowActions.length) {
-			items.push({ separator: true })
-			for (const a of table.rowActions) items.push({ label: a.label, onSelect: () => a.onSelect(row, selection.size ? [...selection] : [row]) })
-		}
-		return items
-	}
 
 	// ── Column order / visibility / widths (unchanged from the original) ─
 	const effectiveOrder = React.useMemo(() => orderColumns(userColumns, state.columnOrder), [userColumns, state.columnOrder])
@@ -326,32 +280,66 @@ export function ClientDataTable(props: ClientDataTableProps) {
 		[state.columnSizes],
 	)
 	const totalWidth = React.useMemo(() => visibleColumns.reduce((sum, c) => sum + widthFor(c), 0), [visibleColumns, widthFor])
-	// Pinned columns: sticky with cumulative offsets from their edge.
-	const pinOffsets = React.useMemo(() => {
-		const out = new Map<string, React.CSSProperties>()
-		let left = 0
-		for (const c of visibleColumns) {
-			if (specs.get(c.id)?.spec.pin !== "left") continue
-			out.set(c.id, { position: "sticky", left, zIndex: 2 })
-			left += widthFor(c)
-		}
-		let right = 0
-		for (const c of [...visibleColumns].reverse()) {
-			if (specs.get(c.id)?.spec.pin !== "right") continue
-			out.set(c.id, { position: "sticky", right, zIndex: 2 })
-			right += widthFor(c)
-		}
-		return out
-	}, [visibleColumns, specs, widthFor])
+	// Pinned columns: sticky with cumulative offsets from their edge (an on-demand chunk, loaded before the first render when a column is pinned).
+	const hasPins = React.useMemo(() => table.columns.some((c) => c.pin), [table.columns])
+	const pinMod = pinningPart.use()
+	React.useEffect(() => {
+		if (hasPins) preload(pinningPart)
+	}, [hasPins])
+	const pinOffsets = React.useMemo(
+		() => (hasPins && pinMod ? pinMod.pinOffsets(visibleColumns, (id) => specs.get(id)?.spec.pin, widthFor) : NO_PINS),
+		[hasPins, pinMod, visibleColumns, specs, widthFor],
+	)
+	const pinEdge = (pin: "left" | "right" | undefined) => (pin && pinMod ? pinMod.pinEdge(pin) : undefined)
 	const alignClass = (id: string) => {
 		const a = specs.get(id)?.spec.align
 		return a === "right" ? "jd:text-right" : a === "center" ? "jd:text-center" : undefined
 	}
-	const { startResize } = useColumnResize({
-		sizes: state.columnSizes,
-		onSizesChange: actions.setColumnSizes,
-		defaultSize: DEFAULT_COL_SIZE,
-	})
+	// Column resize and drag-reorder (an on-demand chunk): preloaded when the pointer enters the header,
+	// and a first press that comes before it still works (the drag starts from where it was pressed).
+	const sizesRef = React.useRef(state.columnSizes)
+	sizesRef.current = state.columnSizes
+	const startResize = (col: DataTableColumn<Row>, e: React.MouseEvent | React.TouchEvent) => {
+		e.preventDefault()
+		e.stopPropagation()
+		const startX = "touches" in e ? (e.touches[0]?.clientX ?? 0) : e.clientX
+		const startWidth = widthFor(col)
+		// Until the chunk is there, remember where the pointer goes and whether it was released.
+		const early = { x: startX, released: false }
+		const onMove = (ev: MouseEvent | TouchEvent) => {
+			early.x = "touches" in ev ? (ev.touches[0]?.clientX ?? early.x) : ev.clientX
+		}
+		const onUp = () => {
+			early.released = true
+		}
+		const stop = () => {
+			document.removeEventListener("mousemove", onMove)
+			document.removeEventListener("touchmove", onMove)
+			document.removeEventListener("mouseup", onUp)
+			document.removeEventListener("touchend", onUp)
+		}
+		document.addEventListener("mousemove", onMove)
+		document.addEventListener("touchmove", onMove)
+		document.addEventListener("mouseup", onUp)
+		document.addEventListener("touchend", onUp)
+		columnDragPart.load().then(
+			(m) => {
+				stop()
+				m.trackResize(startX, startWidth, (w) => actions.setColumnSizes({ ...sizesRef.current, [col.id]: w }), early)
+			},
+			stop,
+		)
+	}
+	const dropColumn = (dragged: string, target: string) => {
+		const ids = effectiveOrder.map((c) => c.id)
+		columnDragPart.load().then(
+			(m) => {
+				const next = m.reorder(ids, dragged, target)
+				if (next) actions.setColumnOrder(next)
+			},
+			() => undefined,
+		)
+	}
 
 	const sortFieldIds = React.useMemo(() => new Set(sortOptions.map((s) => s.fieldId)), [sortOptions])
 	const filterFieldIds = React.useMemo(() => new Set(filterFields.map((f) => f.id)), [filterFields])
@@ -400,38 +388,6 @@ export function ClientDataTable(props: ClientDataTableProps) {
 		actions.setSearch("")
 	}
 
-	const handleSelectView = React.useCallback(
-		(v: {
-			id: string
-			state: {
-				search: string
-				filters: typeof state.filters
-				sort: typeof state.sort
-				hiddenColumns?: string[] | undefined
-				columnOrder?: string[] | undefined
-				columnSizes?: Record<string, number> | undefined
-				groupBy?: string[] | undefined
-				detailColumns?: string[] | null | undefined
-			}
-		}) => {
-			actions.replaceState(
-				initialTableState({
-					search: v.state.search,
-					filters: v.state.filters,
-					sort: v.state.sort,
-					hiddenColumns: v.state.hiddenColumns ?? [],
-					columnOrder: v.state.columnOrder ?? [],
-					columnSizes: v.state.columnSizes ?? {},
-					groupBy: v.state.groupBy ?? table.groupBy,
-					detailColumns: v.state.detailColumns ?? null,
-					pageSize: state.pageSize,
-					viewId: v.id || null,
-				}),
-			)
-		},
-		[actions, state.pageSize],
-	)
-
 	// Page wiring: charts / facets add a filter on a field of this instance.
 	const filterFieldsRef = React.useRef(filterFields)
 	filterFieldsRef.current = filterFields
@@ -470,7 +426,11 @@ export function ClientDataTable(props: ClientDataTableProps) {
 	return (
 		<div
 			ref={rootRef}
-			onPointerDown={onFocus}
+			onPointerDown={() => {
+				// Someone working with this table may use its keyboard shortcuts next: fetch them now.
+				preload(keyboardPart)
+				onFocus?.()
+			}}
 			data-jd-instance={scope}
 			data-jd-compact={compact ? "" : undefined}
 			data-jd-density={table.density}
@@ -510,38 +470,14 @@ export function ClientDataTable(props: ClientDataTableProps) {
 								: {})}
 						/>
 						{enableViews && (
-							<ViewSelector
-								views={views}
-								activeViewId={state.viewId}
+							<ViewsControl
+								scope={viewsScope(scope)}
+								storage={customStorage}
 								state={state}
-								onSelectView={handleSelectView}
-								onCreateView={async (name) => {
-									const v = await saveView({
-										id: makeViewId(),
-										name,
-										state: {
-											search: state.search,
-											filters: state.filters,
-											sort: state.sort,
-											hiddenColumns: state.hiddenColumns,
-											columnOrder: state.columnOrder,
-											columnSizes: state.columnSizes,
-											groupBy: state.groupBy,
-											detailColumns: state.detailColumns,
-										},
-										createdAt: new Date().toISOString(),
-										updatedAt: new Date().toISOString(),
-									})
-									actions.setViewId(v.id)
-									return v
-								}}
-								onUpdateView={async (v) => saveView(v)}
-								onDeleteView={async (id) => {
-									await removeView(id)
-									if (state.viewId === id) actions.setViewId(null)
-								}}
-								onSetDefault={setDefaultView}
-								onSetFavorite={setViewFavorite}
+								replaceState={actions.replaceState}
+								setViewId={actions.setViewId}
+								groupBy={table.groupBy}
+								openedOnDefault={openedOnDefault !== null}
 							/>
 						)}
 						<MoreMenu
@@ -607,7 +543,7 @@ export function ClientDataTable(props: ClientDataTableProps) {
 						cls_.table,
 					)}
 				>
-					<TableHeader data-jd="thead" className={cn("jd:bg-background jd:border-b", !compact && "jd:sticky jd:top-0 jd:z-10", cls_.thead)}>
+					<TableHeader data-jd="thead" onPointerEnter={() => preload(columnDragPart)} className={cn("jd:bg-background jd:border-b", !compact && "jd:sticky jd:top-0 jd:z-10", cls_.thead)}>
 						<TableRow className="jd:hover:bg-transparent">
 							{expandInline && <TableHead className={cn("jd:bg-muted jd:w-7 jd:px-0 jd:py-0", D.head)} style={{ width: SPECIAL_W }} aria-label={L.expandRow} />}
 							{checkboxes && (
@@ -652,16 +588,7 @@ export function ClientDataTable(props: ClientDataTableProps) {
 										}}
 										onDrop={(e: React.DragEvent) => {
 											e.preventDefault()
-											const dragged = e.dataTransfer.getData("text/plain")
-											if (!dragged || dragged === col.id) return
-											const ids = effectiveOrder.map((c) => c.id)
-											const from = ids.indexOf(dragged)
-											const to = ids.indexOf(col.id)
-											if (from < 0 || to < 0) return
-											const next = [...ids]
-											next.splice(from, 1)
-											next.splice(to, 0, dragged)
-											actions.setColumnOrder(next)
+											dropColumn(e.dataTransfer.getData("text/plain"), col.id)
 										}}
 									>
 										<div className="jd:flex jd:items-center jd:gap-1">
@@ -672,6 +599,7 @@ export function ClientDataTable(props: ClientDataTableProps) {
 												onDragStart={(e: React.DragEvent) => {
 													e.dataTransfer.setData("text/plain", col.id)
 													e.dataTransfer.effectAllowed = "move"
+													preload(columnDragPart)
 												}}
 												onClick={(e) => sortable && handleHeaderSort(sortId, e.shiftKey)}
 												title="Click to sort, shift-click to add a sort, drag to reorder"
@@ -702,8 +630,8 @@ export function ClientDataTable(props: ClientDataTableProps) {
 										</div>
 										<button
 											type="button"
-											onMouseDown={(e) => startResize(col.id, e)}
-											onTouchStart={(e) => startResize(col.id, e)}
+											onMouseDown={(e) => startResize(col, e)}
+											onTouchStart={(e) => startResize(col, e)}
 											onClick={(e) => e.stopPropagation()}
 											className="jd:absolute jd:right-0 jd:top-0 jd:h-full jd:w-1 jd:cursor-col-resize jd:select-none jd:bg-transparent jd:hover:bg-primary/40 jd:active:bg-primary"
 											aria-label="Resize column"
@@ -718,51 +646,41 @@ export function ClientDataTable(props: ClientDataTableProps) {
 							<TableRow className="jd:hover:bg-transparent">
 								<TableCell colSpan={colCount + specialCols || 1} className="jd:p-0">
 									<div className="jd:sticky jd:left-0 jd:w-[100cqw] jd:whitespace-normal">
-										<EmptyState filtered={isFiltered} onClearFilters={isFiltered ? clearAll : undefined} />
+										<OnDemand>
+											<EmptyState filtered={isFiltered} onClearFilters={isFiltered ? clearAll : undefined} />
+										</OnDemand>
 									</div>
 								</TableCell>
 							</TableRow>
 						) : (
 							pageEntries.map((entry, i) => {
 								if (entry.kind === "group") {
-									const g = entry.node
-									const col = table.columns.find((c) => c.id === g.field)
-									return (
-										<TableRow key={`g:${entry.path}`} data-jd-group={entry.path} className={cn("jd:bg-muted/50 jd:hover:bg-muted/70 jd:border-b", cls_.groupRow)}>
-											<TableCell colSpan={specialCols + 1} className={cn("jd:px-2 jd:text-[12px]", D.cell)} style={{ paddingLeft: 8 + g.depth * 16 }}>
-												<button
-													type="button"
-													aria-expanded={entry.open}
-													data-jd="group-toggle"
-													onClick={() =>
-														setCollapsed((prev) => {
-															const next = new Set(prev)
-															if (next.has(entry.path)) next.delete(entry.path)
-															else next.add(entry.path)
-															return next
-														})
-													}
-													className="jd:flex jd:cursor-pointer jd:items-center jd:gap-1.5 jd:whitespace-nowrap"
-												>
-													<ChevronRight className={cn("jd:h-3.5 jd:w-3.5 jd:transition-transform", entry.open && "jd:rotate-90")} />
-													<span className="jd:text-muted-foreground">{col?.label ?? g.field}:</span>
-													<span className="jd:font-medium">{g.key}</span>
-													<span className="jd:bg-tab-badge jd:inline-flex jd:h-4 jd:min-w-4 jd:items-center jd:justify-center jd:rounded-full jd:px-1 jd:text-[10px] jd:tabular-nums" data-jd="group-count">
-														{g.count}
-													</span>
-												</button>
-											</TableCell>
-											{visibleColumns.slice(1).map((c) => {
-												const agg = g.aggregates[c.id]
-												const spec = specs.get(c.id)?.spec
-												return (
-													<TableCell key={c.id} className={cn("jd:px-3 jd:text-[12px] jd:font-medium jd:tabular-nums", D.cell, alignClass(c.id))} data-jd-agg={agg === undefined ? undefined : c.id}>
-														{agg === undefined || !spec ? null : (formatValue(agg, {}, spec, renderCtx.formats) ?? new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(agg))}
-													</TableCell>
-												)
-											})}
-										</TableRow>
-									)
+									// Only reached once the grouping chunk is there (entries are plain rows until then).
+									const GroupRow = groupMod?.GroupRow
+									return GroupRow ? (
+										<GroupRow
+											key={`g:${entry.path}`}
+											node={entry.node}
+											path={entry.path}
+											open={entry.open}
+											table={table}
+											columns={visibleColumns}
+											specs={specs}
+											specialCols={specialCols}
+											cellClass={D.cell}
+											rowClass={cls_.groupRow}
+											alignClass={alignClass}
+											formats={renderCtx.formats}
+											onToggle={(path) =>
+												setCollapsed((prev) => {
+													const next = new Set(prev)
+													if (next.has(path)) next.delete(path)
+													else next.add(path)
+													return next
+												})
+											}
+										/>
+									) : null
 								}
 								const row = entry.row
 								const open = expandInline && expanded.has(row)
@@ -918,14 +836,25 @@ export function ClientDataTable(props: ClientDataTableProps) {
 			<ShortcutsHelp open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
 			{menu && (
 				<OnDemand>
-					<ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.row, menu.col)} onClose={() => setMenu(null)} label={table.label} />
+					<RowMenu
+						x={menu.x}
+						y={menu.y}
+						row={menu.row}
+						col={menu.col}
+						table={table}
+						labels={L}
+						selection={selection}
+						filterFields={filterFields}
+						addFilter={actions.addFilter}
+						expandInline={expandInline}
+						expanded={expanded.has(menu.row)}
+						toggleExpand={toggleExpand}
+						onRowOpen={onRowOpen}
+						copyRows={copyRows}
+						onClose={() => setMenu(null)}
+					/>
 				</OnDemand>
 			)}
 		</div>
 	)
-}
-
-/** Generate a stable id for a newly-saved view. */
-function makeViewId(): string {
-	return `v_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`
 }

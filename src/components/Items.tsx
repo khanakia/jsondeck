@@ -14,9 +14,8 @@ import { toText } from "../core/query"
 import type { ResolvedDeck } from "../core/resolve"
 import { ClientDataTable, type TableApi } from "../sdt/ClientDataTable"
 import type { FilterCondition } from "../sdt/types"
-import { toSource } from "../core/serialize"
 import type { RenderCtx } from "./cells"
-import { Chart, CodeView, KeyValueCard, Markdown, OnDemand, StatTile, Toc } from "./lazy"
+import { ChartItemView, Facets, ItemCode, KeyValueCard, Markdown, OnDemand, StatTile, Toc } from "./lazy"
 
 /** What the page shares with every component on it. */
 export type PageCtx = {
@@ -120,134 +119,11 @@ function TableItemView({ item, ctx }: { item: ResolvedItem; ctx: PageCtx }) {
 	return (
 		<div className="jd:flex jd:gap-3 jd:max-md:flex-col" data-jd="table-with-facets">
 			<div className="jd:w-48 jd:shrink-0 jd:max-md:w-full">
-				<Facets item={item} ctx={ctx} fields={facets} />
+				<OnDemand>
+					<Facets item={item} ctx={ctx} fields={facets} />
+				</OnDemand>
 			</div>
 			<div className="jd:min-w-0 jd:flex-1">{view}</div>
-		</div>
-	)
-}
-
-/** Count per value for each field; clicking a value filters the target tables. */
-function Facets({ item, ctx, fields }: { item: ResolvedItem; ctx: PageCtx; fields: string[] }) {
-	const rows = pageRows(ctx, item.table ?? "")
-	const table = ctx.deck.tables.find((t) => t.name === item.table)
-	const max = 12
-	return (
-		<div className="jd:flex jd:flex-col jd:gap-3" data-jd="facets">
-			{fields.map((f) => {
-				const counts = new Map<string, number>()
-				for (const r of rows) {
-					const v = toText(r[f]) || "(empty)"
-					counts.set(v, (counts.get(v) ?? 0) + 1)
-				}
-				const list = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, max)
-				const top = list[0]?.[1] ?? 1
-				const label = table?.columns.find((c) => c.id === f)?.label ?? f
-				return (
-					<div key={f}>
-						<div className="jd:text-muted-foreground jd:mb-1 jd:text-[10px] jd:font-semibold jd:uppercase jd:tracking-wider">{label}</div>
-						<div className="jd:flex jd:flex-col">
-							{list.map(([v, n]) => (
-								<button
-									key={v}
-									type="button"
-									data-jd-facet={`${f}=${v}`}
-									onClick={() => ctx.select(item, f, v)}
-									className="jd:hover:bg-muted jd:relative jd:flex jd:h-6 jd:cursor-pointer jd:items-center jd:justify-between jd:gap-2 jd:rounded jd:px-1.5 jd:text-left jd:text-[12px]"
-								>
-									<span className="jd:bg-primary/10 jd:absolute jd:inset-y-0.5 jd:left-0 jd:rounded" style={{ width: `${(n / top) * 100}%` }} />
-									<span className="jd:relative jd:truncate">{v}</span>
-									<span className="jd:text-muted-foreground jd:relative jd:tabular-nums">{n}</span>
-								</button>
-							))}
-						</div>
-					</div>
-				)
-			})}
-		</div>
-	)
-}
-
-/** Stable colour order: the groupBy values of the UNFILTERED rows, so colours don't shift when filters change. */
-function colorDomainFor(rows: Row[], field: string | undefined): string[] | undefined {
-	if (!field) return undefined
-	const seen = new Set<string>()
-	for (const r of rows) seen.add(toText(r[field]) || "(empty)")
-	return [...seen]
-}
-
-/** Most corrections the fit loop makes per size change (it converges in 1–2). */
-const FIT_PASSES = 4
-/** Smallest plot height a fitted chart gets. */
-const MIN_PLOT = 60
-
-/**
- * For a fixed-height item: the chart's plot height so the whole figure (title,
- * legend, axes) fits the box exactly, measured with ResizeObserver, never
- * overflowing by a few px. Returns undefined for auto-height items.
- */
-function useFitHeight(box: React.RefObject<HTMLDivElement | null>, fixed: boolean): number | undefined {
-	const [avail, setAvail] = React.useState<number | undefined>(undefined)
-	const [extra, setExtra] = React.useState(0)
-	const passes = React.useRef(0)
-	React.useLayoutEffect(() => {
-		const el = box.current
-		if (!el || !fixed) return
-		const measure = () => {
-			passes.current = 0
-			setAvail(el.clientHeight)
-		}
-		measure()
-		const ro = new ResizeObserver(measure)
-		ro.observe(el)
-		return () => ro.disconnect()
-	}, [box, fixed])
-	React.useLayoutEffect(() => {
-		const fig = box.current?.firstElementChild
-		// Nothing to fit while the chart chunk is still loading (the placeholder must not use up the passes).
-		if (avail === undefined || !fig || fig.getAttribute("data-jd") === "pending" || passes.current >= FIT_PASSES) return
-		const over = fig.getBoundingClientRect().height - avail
-		if (over > 0.5 || over < -1) {
-			passes.current += 1
-			setExtra((e) => Math.max(0, e + over))
-		}
-	})
-	return avail === undefined ? undefined : Math.max(MIN_PLOT, Math.floor(avail - extra))
-}
-
-function ChartItemView({ item, ctx }: { item: ResolvedItem; ctx: PageCtx }) {
-	const [selected, setSelected] = React.useState<string | undefined>(undefined)
-	const box = React.useRef<HTMLDivElement>(null)
-	const cls_ = useClassNames()
-	const fit = useFitHeight(box, item.height !== undefined)
-	const spec = item.spec
-	if (spec.component !== "chart") return null
-	const { component, table, targets, id, span, height, title, ...chart } = spec
-	const field = typeof chart.groupBy === "string" && !chart.bucket ? chart.groupBy : undefined
-	const all = ctx.deck.tables.find((t) => t.name === table)?.rows ?? []
-	const domain = colorDomainFor(all, typeof chart.series === "string" ? chart.series : field)
-	// A groupBy column with a value order (config `order`, or a known one like severity) sorts the bars that way.
-	const order = field && chart.sort === undefined ? ctx.deck.tables.find((t) => t.name === table)?.columns.find((c) => c.id === field)?.order : undefined
-	// Palette: this chart's, else the global one, assigned in colour-domain order; explicit `colors` win.
-	const palette = chart.palette ?? ctx.deck.palette
-	const paletteColors = palette?.length && domain ? Object.fromEntries(domain.map((v, i) => [v, palette[i % palette.length] ?? ""])) : undefined
-	const withColors = paletteColors ? { ...chart, colors: { ...paletteColors, ...(chart.colors ?? {}) } } : chart
-	const sized = fit !== undefined ? { ...withColors, height: fit } : withColors
-	return (
-		<div ref={box} className={cn("jd:h-full jd:min-h-0 jd:overflow-hidden", cls_.chart)} data-jd="chart-box">
-		<OnDemand height={item.height === undefined ? (chart.type === "sparkline" ? SPARK_PENDING_HEIGHT : CHART_PENDING_HEIGHT) : undefined}>
-		<Chart
-			rows={pageRows(ctx, table)}
-			spec={order ? { ...sized, sort: order } : sized}
-			{...(domain ? { colorDomain: domain } : {})}
-			{...(selected ? { selected } : {})}
-			onSelect={(value) => {
-				if (!field) return
-				setSelected(value)
-				ctx.select(item, field, value)
-			}}
-		/>
-		</OnDemand>
 		</div>
 	)
 }
@@ -262,11 +138,9 @@ const TILE_PENDING_HEIGHT = 60
 export function ItemView({ item }: { item: ResolvedItem }) {
 	const code = item.spec.code
 	if (code === undefined || code === false) return <ItemBody item={item} />
-	const { code: _code, ...rest } = item.spec
-	const src = typeof code === "string" ? code : toSource(rest)
 	return (
 		<OnDemand>
-			<CodeView code={src} lang="js" preview={<ItemBody item={item} />} />
+			<ItemCode spec={item.spec} preview={<ItemBody item={item} />} />
 		</OnDemand>
 	)
 }
@@ -281,7 +155,11 @@ function ItemBody({ item }: { item: ResolvedItem }) {
 		case "table":
 			return <TableItemView item={item} ctx={ctx} />
 		case "chart":
-			return <ChartItemView item={item} ctx={ctx} />
+			return (
+				<OnDemand height={item.height === undefined ? (spec.type === "sparkline" ? SPARK_PENDING_HEIGHT : CHART_PENDING_HEIGHT) : undefined}>
+					<ChartItemView item={item} ctx={ctx} />
+				</OnDemand>
+			)
 		case "stat": {
 			const { component, table, id, span, height, title, label, ...stat } = spec
 			return (
@@ -316,7 +194,11 @@ function ItemBody({ item }: { item: ResolvedItem }) {
 				</OnDemand>
 			)
 		case "facets":
-			return <Facets item={item} ctx={ctx} fields={spec.fields} />
+			return (
+				<OnDemand>
+					<Facets item={item} ctx={ctx} fields={spec.fields} />
+				</OnDemand>
+			)
 		default:
 			return <div className={cn("jd:text-muted-foreground")}>{L.nothingToShow}</div>
 	}

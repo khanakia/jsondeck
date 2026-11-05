@@ -15,8 +15,12 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-/** Charts: bar, line, area, pie, donut, sparkline. */
-export const Chart = React.lazy(() => import("../viz/Chart").then((m) => ({ default: m.Chart })))
+/** A chart item on a page, with the chart itself (bar, line, area, pie, donut, sparkline). */
+export const ChartItemView = React.lazy(() => import("./ChartItem").then((m) => ({ default: m.ChartItemView })))
+/** Facets (count per value, click to filter). */
+export const Facets = React.lazy(() => import("./Facets").then((m) => ({ default: m.Facets })))
+/** An item in a Preview / Code box (`code: true`): its spec as source text, with the code view. */
+export const ItemCode = React.lazy(() => import("./ItemCode").then((m) => ({ default: m.ItemCode })))
 export const StatTile = React.lazy(() => import("../viz/StatTile").then((m) => ({ default: m.StatTile })))
 export const KeyValueCard = React.lazy(() => import("../viz/KeyValueCard").then((m) => ({ default: m.KeyValueCard })))
 /** Markdown with callouts, steps, heading anchors and code fences. */
@@ -24,7 +28,12 @@ export const Markdown = React.lazy(() => import("../viz/Markdown").then((m) => (
 /** "On this page" outline. */
 export const Toc = React.lazy(() => import("./Toc").then((m) => ({ default: m.Toc })))
 /** Preview / Code box with the syntax highlighter. */
-export const CodeView = React.lazy(() => import("./CodeView").then((m) => ({ default: m.CodeView })))
+const loadCodeView = () => import("./CodeView")
+export const CodeView = React.lazy(() => loadCodeView().then((m) => ({ default: m.CodeView })))
+/** Start fetching the code view early (example() does, so it arrives with the example shell). */
+export function preloadCodeView(): void {
+	loadCodeView().catch(() => undefined)
+}
 /** ⌘K site search (builds its index when first opened). */
 const loadSearch = () => import("./SearchDialog")
 export const SearchDialog = React.lazy(() => loadSearch().then((m) => ({ default: m.SearchDialog })))
@@ -41,6 +50,8 @@ export function preloadSearchWhenIdle(): () => void {
 	const t = window.setTimeout(run, 200)
 	return () => window.clearTimeout(t)
 }
+/** "No rows" / "No matches" message of an empty table (sdt/table/EmptyState.tsx). */
+export const EmptyState = React.lazy(() => import("../sdt/table/EmptyState").then((m) => ({ default: m.EmptyState })))
 /** Side drawer for a row and its related rows. */
 export const RowDrawer = React.lazy(() => import("./RowDrawer").then((m) => ({ default: m.RowDrawer })))
 /** Config issues box (only when a config has issues). */
@@ -49,8 +60,8 @@ export const IssuesBox = React.lazy(() => import("./IssuesBox").then((m) => ({ d
 export const DeckEditTools = React.lazy(() => import("./EditTools").then((m) => ({ default: m.DeckEditTools })))
 export const ItemTools = React.lazy(() => import("./EditTools").then((m) => ({ default: m.ItemTools })))
 export const AddItem = React.lazy(() => import("./EditTools").then((m) => ({ default: m.AddItem })))
-/** Right-click menu. */
-export const ContextMenu = React.lazy(() => import("./ContextMenu").then((m) => ({ default: m.ContextMenu })))
+/** A row's right-click menu (items and the menu component). */
+export const RowMenu = React.lazy(() => import("../sdt/rows/RowMenu").then((m) => ({ default: m.RowMenu })))
 /** Expanded row: detail fields and nested tables. */
 export const RowDetail = React.lazy(() => import("../sdt/rows/RowDetail").then((m) => ({ default: m.RowDetail })))
 /** Quick filter strip (range, chips, toggle, search), when a table configures `quickFilters`. */

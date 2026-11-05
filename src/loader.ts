@@ -18,6 +18,8 @@
  *  - `setTheme`, `pageTheme`, `defineConfig` and `version` work right away;
  *  - everything else (`describe`, `htmlSnippet`, `THEME_TOKENS`, ...) is there
  *    once `await JsonDeck.ready` resolves, and throws a clear error before.
+ *    Reading `JsonDeck.ready` is what fetches that part (its own chunk), so a
+ *    page that only mounts never downloads it.
  *
  * Pages opened from file:// cannot load modules (browsers block it), so the
  * loader shows a message pointing at jsondeck.full.js, the single offline file.
@@ -26,7 +28,9 @@ import { defineConfig } from "./core/typed"
 import { pageTheme, restoreTheme, setTheme } from "./lib/theme-dom"
 import { version } from "./version"
 
-type Api = typeof import("./index")
+/** What dist/chunks/index.js exports (src/split.ts). */
+type Api = typeof import("./split")
+type Extras = typeof import("./extras")
 type MountConfig = Parameters<Api["mount"]>[1]
 type ExampleOptions = Parameters<Api["example"]>[1]
 /** What mount / example return from the loader: the real handle's fields, filled in once rendered. */
@@ -101,12 +105,8 @@ core.catch((err: unknown) => {
 	console.error(err instanceof Error ? err.message : err, `\n(loader: ${entry})`)
 })
 
-/** `JsonDeck.ready`: resolves once the library is there, rejects if it could not load (already reported in the console, so not again as "unhandled"). */
-const ready = core.then(() => undefined)
-ready.catch(() => undefined)
-
 /** A mount / example call made through the loader: runs once the core is there. */
-function queued(run: (api: Api) => { issues: string[]; unmount: () => void }, el: Element | string): Handle {
+function queued(run: (api: Api) => Handle, el: Element | string): Handle {
 	let real: { unmount: () => void } | null = null
 	let cancelled = false
 	const issues: string[] = []
@@ -115,7 +115,10 @@ function queued(run: (api: Api) => { issues: string[]; unmount: () => void }, el
 			if (cancelled) return
 			const m = run(api)
 			real = m
-			issues.push(...m.issues)
+			// The real handle's issues fill in when its own `ready` resolves.
+			return m.ready.then(() => {
+				issues.push(...m.issues)
+			})
 		},
 		(err: unknown) => {
 			showError(el, err)
@@ -148,19 +151,34 @@ const api: Record<string, unknown> = {
 	defineConfig,
 	mount: (el: Element | string, config: MountConfig): Handle => queued((a) => a.mount(el, config), el),
 	example: (el: Element | string, opts: ExampleOptions): Handle => queued((a) => a.example(el, opts), el),
-	ready,
 }
 for (const name of LATER) Object.defineProperty(api, name, { configurable: true, enumerable: true, get: () => notYet(name) })
 
-// Once the core is there, every name points at the real thing (mount / example keep returning handles with `ready`).
-core.then(
-	(real) => {
-		for (const [name, value] of Object.entries(real)) {
-			if (name === "version" || name === "ready") continue
-			Object.defineProperty(api, name, { configurable: true, enumerable: true, writable: true, value })
+/** Point each name at the real thing (mount / example keep returning handles with `ready`). */
+function adopt(mod: Api | Extras): void {
+	for (const [name, value] of Object.entries(mod)) {
+		if (name === "version" || name === "ready" || name === "loadExtras") continue
+		Object.defineProperty(api, name, { configurable: true, enumerable: true, writable: true, value })
+	}
+}
+core.then(adopt, () => undefined)
+
+/**
+ * `JsonDeck.ready`: resolves once the whole API is there, rejects if it could
+ * not load (already reported in the console, so not again as "unhandled").
+ * Created on first read, which is what fetches the extras chunk.
+ */
+let whole: Promise<void> | null = null
+Object.defineProperty(api, "ready", {
+	configurable: true,
+	enumerable: true,
+	get: (): Promise<void> => {
+		if (!whole) {
+			whole = core.then((a) => a.loadExtras()).then(adopt)
+			whole.catch((err: unknown) => console.error(err instanceof Error ? err.message : err))
 		}
+		return whole
 	},
-	() => undefined,
-)
+})
 
 export default api

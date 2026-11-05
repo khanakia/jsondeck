@@ -55,10 +55,11 @@ Pages opened straight from disk (`file://`) cannot use `jsondeck.js`: browsers b
 
 ## Mount returns issues
 
-`mount` returns `{ unmount, issues }`. `issues` lists config problems (an unknown key, a bad value) with a suggestion; the deck also shows them above the tables and still renders everything that is valid.
+`mount` returns `{ unmount, issues, ready }`. `issues` lists config problems (an unknown key, a bad value) with a suggestion; the deck also shows them above the tables and still renders everything that is valid. The messages load only when a config has problems, so `issues` fills in a moment after the call: read it after `ready`.
 
 ```js
 const deck = JsonDeck.mount('#app', { data: '#data', tables: { hosts: { pagesize: 10 } } })
+await deck.ready
 console.log(deck.issues) // e.g. a "did you mean pageSize?" hint
 ```
 

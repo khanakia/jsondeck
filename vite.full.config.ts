@@ -6,10 +6,10 @@
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
-import { ALIASES, DEFINE, MINIFY } from "./vite.shared"
+import { ALIASES, DEFINE, MINIFY, lucideLite } from "./vite.shared"
 
 export default defineConfig({
-	plugins: [react(), tailwindcss()],
+	plugins: [lucideLite(), react(), tailwindcss()],
 	resolve: { alias: ALIASES },
 	define: DEFINE,
 	build: {

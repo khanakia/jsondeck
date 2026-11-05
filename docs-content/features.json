@@ -298,7 +298,7 @@
     "example": null,
     "since": "0.1.0",
     "status": "stable",
-    "checkReason": "Resize hook exists in src/sdt/columns/useColumnResize.ts; confirm it is wired for every table."
+    "checkReason": "Resize lives in src/sdt/columns/drag.ts (loaded on header hover or the first press on a handle); scripts/verify-cdn.mjs checks it works on first use."
   },
   {
     "id": "column-reorder",

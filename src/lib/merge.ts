@@ -8,7 +8,10 @@
  * first download after React). It knows the utility families jsondeck and its
  * users' overrides use, not all of Tailwind; `scripts/check-merge.mjs` proves
  * it gives the same result as tailwind-merge for every pair of classes found
- * in src/, plus a list of common overrides, and runs with the checks.
+ * in src/, plus a list of common overrides, and runs with the checks. The
+ * tables below list only the utilities that appear there (the stylesheet holds
+ * no other `jd:` class, so no other one can have an effect); add a family here
+ * when src/ starts using it, and the check fails until you do.
  *
  * How it works: each class becomes a key, variants + important + a "group"
  * (what the utility sets, e.g. "h", "font-size", "text-color"). A later class
@@ -31,7 +34,6 @@ const COVERS: Record<string, readonly string[]> = {
 	"inset-y": ["top", "bottom"],
 	gap: ["gap-x", "gap-y"],
 	overflow: ["overflow-x", "overflow-y"],
-	overscroll: ["overscroll-x", "overscroll-y"],
 	rounded: ["rounded-s", "rounded-e", "rounded-t", "rounded-r", "rounded-b", "rounded-l", "rounded-ss", "rounded-se", "rounded-ee", "rounded-es", "rounded-tl", "rounded-tr", "rounded-br", "rounded-bl"],
 	"rounded-t": ["rounded-tl", "rounded-tr"],
 	"rounded-r": ["rounded-tr", "rounded-br"],
@@ -43,25 +45,9 @@ const COVERS: Record<string, readonly string[]> = {
 	"border-color": ["border-color-x", "border-color-y", "border-color-s", "border-color-e", "border-color-t", "border-color-r", "border-color-b", "border-color-l"],
 	"border-color-x": ["border-color-r", "border-color-l"],
 	"border-color-y": ["border-color-t", "border-color-b"],
-	"scroll-m": ["scroll-mx", "scroll-my", "scroll-mt", "scroll-mr", "scroll-mb", "scroll-ml"],
-	"scroll-p": ["scroll-px", "scroll-py", "scroll-pt", "scroll-pr", "scroll-pb", "scroll-pl"],
 	"font-size": ["leading"],
 	flex: ["basis", "grow", "shrink"],
 	"line-clamp": ["display", "overflow"],
-	"fvn-normal": ["fvn-ordinal", "fvn-slashed-zero", "fvn-figure", "fvn-spacing", "fvn-fraction"],
-	"fvn-ordinal": ["fvn-normal"],
-	"fvn-slashed-zero": ["fvn-normal"],
-	"fvn-figure": ["fvn-normal"],
-	"fvn-spacing": ["fvn-normal"],
-	"fvn-fraction": ["fvn-normal"],
-	translate: ["translate-x", "translate-y", "translate-none"],
-	"translate-none": ["translate", "translate-x", "translate-y"],
-	scale: ["scale-x", "scale-y"],
-	touch: ["touch-x", "touch-y", "touch-pz"],
-	"touch-x": ["touch"],
-	"touch-y": ["touch"],
-	"touch-pz": ["touch"],
-	"border-spacing": ["border-spacing-x", "border-spacing-y"],
 }
 
 /** Whole-class utilities (no value part) and the group each sets. */
@@ -69,81 +55,53 @@ const EXACT: Record<string, string> = {}
 const exact = (group: string, names: string) => {
 	for (const n of names.split(" ")) EXACT[n] = group
 }
-exact("display", "block inline-block inline flex inline-flex table inline-table table-caption table-cell table-column table-column-group table-footer-group table-header-group table-row-group table-row flow-root grid inline-grid contents list-item hidden")
+exact("display", "block inline-block flex inline-flex grid contents hidden")
 exact("position", "static fixed absolute relative sticky")
-exact("visibility", "visible invisible collapse")
-exact("font-style", "italic not-italic")
-exact("text-decoration-line", "underline overline line-through no-underline")
-exact("text-transform", "uppercase lowercase capitalize normal-case")
-exact("text-overflow", "truncate text-ellipsis text-clip")
-exact("sr", "sr-only not-sr-only")
-exact("fvn-normal", "normal-nums")
-exact("fvn-ordinal", "ordinal")
-exact("fvn-slashed-zero", "slashed-zero")
-exact("fvn-figure", "lining-nums oldstyle-nums")
-exact("fvn-spacing", "proportional-nums tabular-nums")
-exact("fvn-fraction", "diagonal-fractions stacked-fractions")
-exact("isolation", "isolate isolation-auto")
-exact("box", "box-border box-content")
-exact("float", "float-left float-right float-start float-end float-none")
-exact("clear", "clear-left clear-right clear-both clear-none clear-start clear-end")
-exact("text-alignment", "text-left text-center text-right text-justify text-start text-end")
-exact("text-wrap", "text-wrap text-nowrap text-balance text-pretty")
-exact("break", "break-normal break-words break-all break-keep")
-exact("wrap", "wrap-break-word wrap-anywhere wrap-normal")
-exact("flex-direction", "flex-row flex-row-reverse flex-col flex-col-reverse")
-exact("flex-wrap", "flex-wrap flex-wrap-reverse flex-nowrap")
-exact("grow", "grow grow-0")
-exact("shrink", "shrink shrink-0")
-exact("transform", "transform transform-cpu transform-gpu transform-none")
-exact("antialiasing", "antialiased subpixel-antialiased")
-exact("outline-style", "outline-dashed outline-dotted outline-double outline-none outline-hidden outline-solid")
+exact("visibility", "invisible")
+exact("font-style", "italic")
+exact("text-decoration-line", "underline no-underline")
+exact("text-transform", "uppercase")
+exact("text-overflow", "truncate")
+exact("sr", "sr-only")
+exact("fvn-spacing", "tabular-nums")
+exact("text-alignment", "text-left text-center text-right")
+exact("break", "break-words break-all")
+exact("flex-direction", "flex-row flex-row-reverse flex-col")
+exact("flex-wrap", "flex-wrap")
+exact("shrink", "shrink-0")
+exact("outline-style", "outline-dashed outline-none outline-hidden")
 exact("outline-w", "outline")
-exact("border-style", "border-solid border-dashed border-dotted border-double border-hidden border-none")
+exact("border-style", "border-dashed border-none")
 exact("ring-w", "ring")
 exact("ring-w-inset", "ring-inset")
-exact("bg-clip", "bg-clip-border bg-clip-padding bg-clip-content bg-clip-text")
-exact("bg-attachment", "bg-fixed bg-local bg-scroll")
-exact("bg-repeat", "bg-repeat bg-no-repeat bg-repeat-x bg-repeat-y bg-repeat-round bg-repeat-space")
-exact("bg-size", "bg-auto bg-cover bg-contain")
-exact("bg-position", "bg-bottom bg-center bg-left bg-left-bottom bg-left-top bg-right bg-right-bottom bg-right-top bg-top")
 exact("bg-image", "bg-none")
 exact("shadow", "shadow")
 exact("rounded", "rounded")
 exact("border-w", "border")
-exact("container", "container")
 exact("@container", "@container")
-exact("list-position", "list-inside list-outside")
-exact("decoration-style", "decoration-solid decoration-double decoration-dotted decoration-dashed decoration-wavy")
-exact("transition", "transition transition-all transition-colors transition-opacity transition-shadow transition-transform transition-none")
-exact("select", "select-none select-text select-all select-auto")
-exact("resize", "resize resize-none resize-x resize-y")
-exact("pointer-events", "pointer-events-none pointer-events-auto")
-exact("appearance", "appearance-none appearance-auto")
-exact("whitespace", "whitespace-normal whitespace-nowrap whitespace-pre whitespace-pre-line whitespace-pre-wrap whitespace-break-spaces")
-exact("touch", "touch-auto touch-none touch-manipulation")
-exact("touch-x", "touch-pan-x touch-pan-left touch-pan-right")
-exact("touch-y", "touch-pan-y touch-pan-up touch-pan-down")
-exact("touch-pz", "touch-pinch-zoom")
-exact("table-layout", "table-auto table-fixed")
-exact("caption", "caption-top caption-bottom")
-exact("border-collapse", "border-collapse border-separate")
+exact("decoration-style", "decoration-dotted")
+exact("transition", "transition-all transition-colors transition-opacity transition-transform")
+exact("select", "select-none")
+exact("pointer-events", "pointer-events-none")
+exact("whitespace", "whitespace-normal whitespace-nowrap whitespace-pre whitespace-pre-wrap")
+exact("caption", "caption-bottom")
+exact("border-collapse", "border-collapse")
 
 /** Utilities with a value: stem → group (longest stem wins), for stems whose value never changes the group. */
 const STEMS: Record<string, string> = {}
 const stems = (names: string, group?: string) => {
 	for (const n of names.split(" ")) STEMS[n] = group ?? n
 }
-stems("p px py ps pe pt pr pb pl m mx my ms me mt mr mb ml w h size min-w min-h max-w max-h gap gap-x gap-y")
-stems("inset inset-x inset-y start end top right bottom left z order basis flex grow shrink col-span col-start col-end row-span row-start row-end")
-stems("grid-cols grid-rows auto-cols auto-rows grid-flow overflow overflow-x overflow-y overscroll overscroll-x overscroll-y")
-stems("rounded rounded-s rounded-e rounded-t rounded-r rounded-b rounded-l rounded-ss rounded-se rounded-ee rounded-es rounded-tl rounded-tr rounded-br rounded-bl")
-stems("opacity cursor items justify justify-items justify-self content self place-content place-items place-self")
-stems("leading tracking line-clamp list indent align aspect columns object")
-stems("duration delay ease origin rotate scale scale-x scale-y skew-x skew-y translate translate-x translate-y")
-stems("space-x space-y divide-x divide-y underline-offset outline-offset ring-offset")
-stems("scroll-m scroll-mx scroll-my scroll-mt scroll-mr scroll-mb scroll-ml scroll-p scroll-px scroll-py scroll-pt scroll-pr scroll-pb scroll-pl will-change content-visibility")
-stems("blur backdrop-blur border-spacing border-spacing-x border-spacing-y accent caret")
+stems("p px py pt pr pb pl m mx my mt mr mb ml w h size min-w min-h max-w max-h gap gap-x gap-y")
+stems("inset inset-x inset-y top right bottom left z flex shrink col-span")
+stems("grid-cols overflow overflow-x overflow-y")
+stems("rounded rounded-t rounded-r rounded-l rounded-tl")
+stems("opacity cursor items justify self")
+stems("leading tracking line-clamp list align aspect")
+stems("duration origin rotate translate-x translate-y")
+stems("underline-offset outline-offset")
+stems("scroll-mt")
+stems("accent")
 stems("select", "select")
 stems("whitespace", "whitespace")
 stems("pointer-events", "pointer-events")

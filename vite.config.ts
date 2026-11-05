@@ -9,10 +9,10 @@
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
-import { ALIASES, CHUNK_NAMES, CODE_SPLITTING, DEFINE, MINIFY_ESM } from "./vite.shared"
+import { ALIASES, CHUNK_NAMES, CODE_SPLITTING, DEFINE, MINIFY_ESM, lucideLite } from "./vite.shared"
 
 export default defineConfig({
-	plugins: [react(), tailwindcss()],
+	plugins: [lucideLite(), react(), tailwindcss()],
 	resolve: { alias: ALIASES },
 	define: DEFINE,
 	build: {
@@ -21,7 +21,7 @@ export default defineConfig({
 		cssCodeSplit: false,
 		sourcemap: true,
 		...MINIFY_ESM,
-		lib: { entry: "src/bundle.ts", formats: ["es"], fileName: () => "chunks/index.js", cssFileName: "jsondeck" },
+		lib: { entry: "src/split.ts", formats: ["es"], fileName: () => "chunks/index.js", cssFileName: "jsondeck" },
 		rollupOptions: { output: { chunkFileNames: (c) => `chunks/${CHUNK_NAMES(c)}`, codeSplitting: CODE_SPLITTING } },
 	},
 })

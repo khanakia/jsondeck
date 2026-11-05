@@ -1,13 +1,16 @@
 /**
  * The config issues box ("3 config issues" with each problem and a "did you
- * mean"), loaded only when a config has issues.
+ * mean"), loaded only when a config has issues, with the sentences
+ * (core/explain.ts).
  */
 import { TriangleAlert } from "lucide-react"
 import { fill } from "../core/labels"
-import { formatIssue, type Issue } from "../core/validate"
+import { explainIssue, formatIssue } from "../core/explain"
+import type { RawIssue } from "../core/validate"
 
-export function IssuesBox({ issues, label }: { issues: Issue[]; label: string }) {
-	if (issues.length === 0) return null
+export function IssuesBox({ issues: raw, label }: { issues: RawIssue[]; label: string }) {
+	if (raw.length === 0) return null
+	const issues = raw.map(explainIssue)
 	return (
 		<details open className="jd:rounded-md jd:border jd:border-amber-300 jd:bg-amber-50 jd:px-2 jd:py-1 jd:text-[12px] jd:text-amber-900 jd:dark:border-amber-800 jd:dark:bg-amber-950 jd:dark:text-amber-200" data-jd="issues">
 			<summary className="jd:flex jd:cursor-pointer jd:items-center jd:gap-1.5 jd:font-medium">

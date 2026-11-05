@@ -8,7 +8,7 @@
 import { type ComponentBase, type PageConfig, type PageItem, type SectionConfig, TABLE_KEYS, type TableConfig } from "./config"
 import { humanize } from "./labels"
 import { type ResolvedDeck, type ResolvedTable, resolvePlacement } from "./resolve"
-import { closest, type Issue, issue } from "./validate"
+import { issue, type RawIssue } from "./validate"
 
 export const COMPONENTS = ["table", "chart", "stat", "kv", "markdown", "facets", "toc"] as const
 /** Kinds that read no dataset (no `table` key). */
@@ -86,10 +86,10 @@ function tableOverrides(item: PageItem): Partial<TableConfig> {
 	return out
 }
 
-function resolveItem(deck: ResolvedDeck, raw: unknown, id: string, path: string, issues: Issue[]): ResolvedItem | null {
+function resolveItem(deck: ResolvedDeck, raw: unknown, id: string, path: string, issues: RawIssue[]): ResolvedItem | null {
 	if (!isPageItem(raw)) {
 		const c = isObj(raw) ? raw.component : undefined
-		issues.push(issue(isObj(raw) ? `${path}.component` : path, typeof c === "string" ? `unknown component "${c}"` : `must be an object with component: ${COMPONENTS.join(" | ")}`, typeof c === "string" ? closest(c, [...COMPONENTS]) : undefined))
+		issues.push(issue(isObj(raw) ? `${path}.component` : path, typeof c === "string" ? "component" : "componentShape", typeof c === "string" ? c : undefined, COMPONENTS))
 		return null
 	}
 	const spec = raw
@@ -97,7 +97,7 @@ function resolveItem(deck: ResolvedDeck, raw: unknown, id: string, path: string,
 	const base: ComponentBase = spec
 	const table = "table" in spec ? spec.table : undefined
 	if (!TABLELESS.includes(kind) && (typeof table !== "string" || !(table in deck.datasets))) {
-		issues.push(issue(`${path}.table`, `no such table "${String(table)}"`, closest(String(table), Object.keys(deck.datasets))))
+		issues.push(issue(`${path}.table`, "noTableQ", String(table), Object.keys(deck.datasets)))
 		return null
 	}
 	const item: ResolvedItem = {
@@ -116,26 +116,26 @@ function resolveItem(deck: ResolvedDeck, raw: unknown, id: string, path: string,
 	}
 	if (spec.component === "table" && spec.facets) {
 		const cols = deck.tables.find((t) => t.name === table)?.columns.map((c) => c.id) ?? []
-		for (const f of spec.facets) if (!cols.includes(f)) issues.push(issue(`${path}.facets`, `no such column "${f}"`, closest(f, cols)))
+		for (const f of spec.facets) if (!cols.includes(f)) issues.push(issue(`${path}.facets`, "noColumnQ", f, cols))
 	}
 	if (kind === "facets" && "fields" in spec) {
 		const cols = deck.tables.find((t) => t.name === table)?.columns.map((c) => c.id) ?? []
-		for (const f of spec.fields) if (!cols.includes(f)) issues.push(issue(`${path}.fields`, `no such column "${f}"`, closest(f, cols)))
+		for (const f of spec.fields) if (!cols.includes(f)) issues.push(issue(`${path}.fields`, "noColumnQ", f, cols))
 	}
 	return item
 }
 
-function resolveSection(deck: ResolvedDeck, raw: unknown, path: string, cfgPath: string, pageId: string, issues: Issue[]): ResolvedSection | null {
+function resolveSection(deck: ResolvedDeck, raw: unknown, path: string, cfgPath: string, pageId: string, issues: RawIssue[]): ResolvedSection | null {
 	if (!isObj(raw)) {
-		issues.push(issue(cfgPath, "must be an object"))
+		issues.push(issue(cfgPath, "object"))
 		return null
 	}
-	for (const k of Object.keys(raw)) if (!SECTION_KEYS.includes(k)) issues.push(issue(`${cfgPath}.${k}`, "unknown key", closest(k, SECTION_KEYS)))
+	for (const k of Object.keys(raw)) if (!SECTION_KEYS.includes(k)) issues.push(issue(`${cfgPath}.${k}`, "key", k, SECTION_KEYS))
 	const s: SectionConfig = raw
 	let columns = DEFAULT_COLUMNS
 	if (typeof s.columns === "number" && s.columns > 0) columns = Array.from({ length: Math.floor(s.columns) }, () => 1)
 	else if (Array.isArray(s.columns) && s.columns.length > 0 && s.columns.every((n) => typeof n === "number" && n > 0)) columns = s.columns
-	else if (s.columns !== undefined) issues.push(issue(`${cfgPath}.columns`, "must be a column count or a list of ratios like [2, 1]"))
+	else if (s.columns !== undefined) issues.push(issue(`${cfgPath}.columns`, "gridColumns"))
 	const items = (s.items ?? []).map((it, i) => resolveItem(deck, it, `${pageId}/${path}/${i}`, `${cfgPath}.items[${i}]`, issues)).filter((x): x is ResolvedItem => !!x)
 	const sections = (s.sections ?? []).map((c, i) => resolveSection(deck, c, `${path}.${i}`, `${cfgPath}.sections[${i}]`, pageId, issues)).filter((x): x is ResolvedSection => !!x)
 	// A tab's badge: the row count when the tab holds exactly one table.
@@ -157,13 +157,13 @@ function resolveSection(deck: ResolvedDeck, raw: unknown, path: string, cfgPath:
 }
 
 /** Resolve one page config (also used after a layout edit). */
-export function resolvePage(deck: ResolvedDeck, raw: PageConfig, index: number, issues: Issue[]): ResolvedPage {
+export function resolvePage(deck: ResolvedDeck, raw: PageConfig, index: number, issues: RawIssue[]): ResolvedPage {
 	const cfgPath = `pages[${index}]`
-	for (const k of Object.keys(raw)) if (!PAGE_KEYS.includes(k)) issues.push(issue(`${cfgPath}.${k}`, "unknown key", closest(k, PAGE_KEYS)))
+	for (const k of Object.keys(raw)) if (!PAGE_KEYS.includes(k)) issues.push(issue(`${cfgPath}.${k}`, "key", k, PAGE_KEYS))
 	const id = typeof raw.id === "string" ? raw.id : slug(raw.title ?? `page-${index + 1}`)
 	const filters = (raw.filters ?? []).map((f) => {
 		const field = f.includes(".") ? f.slice(f.indexOf(".") + 1) : f
-		if (!deck.tables.some((t) => t.columns.some((c) => c.id === field))) issues.push(issue(`${cfgPath}.filters`, `no table has a column "${field}"`))
+		if (!deck.tables.some((t) => t.columns.some((c) => c.id === field))) issues.push(issue(`${cfgPath}.filters`, "noTableHasColumn", field))
 		return field
 	})
 	return {
@@ -175,10 +175,10 @@ export function resolvePage(deck: ResolvedDeck, raw: PageConfig, index: number, 
 	}
 }
 
-export function resolvePages(deck: ResolvedDeck): { pages: ResolvedPage[]; configs: PageConfig[]; issues: Issue[] } {
-	const issues: Issue[] = []
+export function resolvePages(deck: ResolvedDeck): { pages: ResolvedPage[]; configs: PageConfig[]; issues: RawIssue[] } {
+	const issues: RawIssue[] = []
 	const given = deck.config.pages
-	if (given !== undefined && !Array.isArray(given)) issues.push(issue("pages", "must be a list of pages"))
+	if (given !== undefined && !Array.isArray(given)) issues.push(issue("pages", "pagesList"))
 	const configs = Array.isArray(given) && given.length > 0 ? given : defaultPages(deck)
 	const pages = configs.map((p, i) => resolvePage(deck, p, i, issues))
 	return { pages, configs, issues }

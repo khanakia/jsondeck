@@ -5,7 +5,7 @@
 [![jsDelivr](https://data.jsdelivr.com/v1/package/gh/khanakia/jsondeck/badge)](https://www.jsdelivr.com/package/gh/khanakia/jsondeck)
 [![TypeScript](https://img.shields.io/badge/types-TypeScript-3178c6.svg)](#typescript)
 
-**jsondeck turns JSON into an interactive dashboard with one `<script>` tag.** Give it an array of objects and it builds a compact data table with search, filters, multi-column sort, pagination, grouping, saved views, column controls and copy/export. Add a small config and the same JSON also gives you charts, stat tiles, key-value cards, linked tables (master-detail, drill-down) and multi-page layouts with sections and grids. It is a JSON viewer, a data grid and a dashboard builder loaded from the jsDelivr CDN with one tag, with no build step, no server and no network calls of its own. It loads only what a page uses: a plain table page downloads about 115 kB of JavaScript, React included, and charts, menus or the date calendar load the first time they are needed. For pages opened from disk (`file://`) there is a single offline file, `jsondeck.full.js`.
+**jsondeck turns JSON into an interactive dashboard with one `<script>` tag.** Give it an array of objects and it builds a compact data table with search, filters, multi-column sort, pagination, grouping, saved views, column controls and copy/export. Add a small config and the same JSON also gives you charts, stat tiles, key-value cards, linked tables (master-detail, drill-down) and multi-page layouts with sections and grids. It is a JSON viewer, a data grid and a dashboard builder loaded from the jsDelivr CDN with one tag, with no build step, no server and no network calls of its own. It loads only what a page uses: a plain table page downloads about 105 kB of JavaScript, React included, and charts, menus or the date calendar load the first time they are needed. For pages opened from disk (`file://`) there is a single offline file, `jsondeck.full.js`.
 
 ```html
 <script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.js"></script>
@@ -55,13 +55,13 @@ jsondeck is served from GitHub through jsDelivr. Always pin the version tag (`@v
 <script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.js"></script>
 ```
 
-`jsondeck.js` is a small loader (1.7 kB gzipped) that sets the global `JsonDeck`. It fetches the core (React and the table) from next to itself, plus every other part only when the page uses it: charts and stat tiles when one is on the page, menus and popovers on the first hover or click, the date calendar when a date filter opens, the row drawer, the layout editor, the code view and site search (see [Files and sizes](#files-and-sizes)). It also links `jsondeck.css` unless the page already links it; linking it yourself in `<head>` lets it start loading sooner:
+`jsondeck.js` is a small loader (1.8 kB gzipped) that sets the global `JsonDeck`. It fetches the core (React and the table) from next to itself, plus every other part only when the page uses it: charts and stat tiles when one is on the page, menus and popovers on the first hover or click, the date calendar when a date filter opens, the row drawer, the layout editor, the code view, site search, saved views, column resize, keyboard shortcuts and the config issue messages (see [Files and sizes](#files-and-sizes)). It also links `jsondeck.css` unless the page already links it; linking it yourself in `<head>` lets it start loading sooner:
 
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.css">
 ```
 
-Calls made right after the tag work: `JsonDeck.mount` and `JsonDeck.example` wait for the core and return their handle at once (`issues` fills in and `handle.ready` resolves once rendered). `setTheme`, `pageTheme`, `defineConfig` and `version` work at once too. The rest of the API (`describe`, `htmlSnippet`, `toSource`, `THEME_TOKENS` and the other constants) is there after `await JsonDeck.ready`; before that it throws an error that says so.
+Calls made right after the tag work: `JsonDeck.mount` and `JsonDeck.example` wait for the core and return their handle at once (`issues` fills in and `handle.ready` resolves once rendered; with a config that has problems, once their messages have loaded too). `setTheme`, `pageTheme`, `defineConfig` and `version` work at once too. The rest of the API (`describe`, `htmlSnippet`, `toSource`, `THEME_TOKENS` and the other constants) is there after `await JsonDeck.ready`; before that it throws an error that says so. Reading `JsonDeck.ready` is what fetches that part, so a page that only mounts never downloads it (`handle.ready` alone does not load it).
 
 ### One file, for offline and `file://` pages
 
@@ -69,11 +69,11 @@ Calls made right after the tag work: `JsonDeck.mount` and `JsonDeck.example` wai
 <script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.full.js"></script>
 ```
 
-Everything in one file, CSS included: it adds one `<style data-jsondeck>` to the page head (skipped when the page links `jsondeck.css`) and fetches nothing, so it works from a page opened with `file://`. Use it there: browsers block module loading on `file://` pages, so `jsondeck.js` cannot load its parts and shows a message pointing at this file instead. It is bigger (237 kB gzipped), since nothing is left out.
+Everything in one file, CSS included: it adds one `<style data-jsondeck>` to the page head (skipped when the page links `jsondeck.css`) and fetches nothing, so it works from a page opened with `file://`. Use it there: browsers block module loading on `file://` pages, so `jsondeck.js` cannot load its parts and shows a message pointing at this file instead. It is bigger (238 kB gzipped), since nothing is left out.
 
 ### ES module (bring your own React)
 
-`dist/jsondeck.mjs` leaves `react` and `react-dom` (18 or later) to your page or app, so React is not shipped twice. It splits the same way as the script: the core is `dist/esm/core.js` (45.6 kB gzipped without React), and the other parts load from `dist/esm/` with plain `import()` when first used. With React from an ESM CDN through an import map (`?external=react` makes react-dom use the same React copy):
+`dist/jsondeck.mjs` leaves `react` and `react-dom` (18 or later) to your page or app, so React is not shipped twice. It splits the same way as the script: the core is `dist/esm/core.js` (39.6 kB gzipped without React; it also holds `describe`, the snippet writers and the constants, which ES module users import directly), and the other parts load from `dist/esm/` with plain `import()` when first used. With React from an ESM CDN through an import map (`?external=react` makes react-dom use the same React copy):
 
 ```html
 <script type="importmap">
@@ -100,39 +100,51 @@ What a page downloads, measured from the browser's network log by `scripts/verif
 
 | Page | JavaScript on first load |
 |---|---|
-| Plain zero-config table, `jsondeck.js` | 114.6 kB (loader, entry, core with React); it was 219 kB before the split |
-| The demo dashboard (stat tiles, charts, facets, a table), `jsondeck.js` | 125 kB (adds the stat tile and chart chunks) |
-| Any page, `jsondeck.full.js` | 237 kB (everything, CSS included) |
+| Plain zero-config table, `jsondeck.js` | 105.3 kB (loader, entry, core with React); it was 114.6 kB in v0.1.1 and 219 kB before the split |
+| The demo dashboard (stat tiles, charts, facets, a table), `jsondeck.js` | 124.8 kB (adds the chart, stat tile, facets, pinning, page filter and header button chunks, and the API extras the demo page asks for with `JsonDeck.ready`) |
+| Any page, `jsondeck.full.js` | 238 kB (everything, CSS included) |
 
 The files:
 
 | File | What it is | gzip |
 |---|---|---|
-| `dist/jsondeck.js` | the `<script>` loader (global `JsonDeck`); fetches what follows from next to itself | 1.7 kB |
-| `dist/chunks/index.js` + `core.js` + `rolldown-runtime.js` | the core every page loads: React, React DOM, the table, config resolution, toolbar | 112.9 kB |
-| `dist/jsondeck.full.js` | the single offline file: everything, CSS included, nothing fetched (`file://` pages) | 236.9 kB |
-| `dist/jsondeck.css` | the stylesheet (`jsondeck.js` links it unless the page does) | 10.2 kB |
-| `dist/jsondeck.mjs` + `dist/esm/core.js` | ES module core, React from your app | 45.9 kB |
+| `dist/jsondeck.js` | the `<script>` loader (global `JsonDeck`); fetches what follows from next to itself | 1.8 kB |
+| `dist/chunks/index.js` + `core.js` + `rolldown-runtime.js` | the core every page loads: React, React DOM, the table, config resolution, toolbar | 103.3 kB |
+| `dist/jsondeck.full.js` | the single offline file: everything, CSS included, nothing fetched (`file://` pages) | 237.6 kB |
+| `dist/jsondeck.css` | the stylesheet (`jsondeck.js` links it unless the page does) | 10.1 kB |
+| `dist/jsondeck.mjs` + `dist/esm/core.js` | ES module core, React from your app | 39.9 kB |
 
 The on-demand chunks in `dist/chunks/` (the same split exists in `dist/esm/` for the ES module, without React):
 
 | Chunk | gzip | Loaded when |
 |---|---|---|
-| `popups.js` | 60.8 kB | first hover, focus or click on a toolbar control (filter, sort, columns, views, group by, more, export), a column header menu or rows-per-page; a filter pill; the shortcuts dialog. Holds Base UI (menus, popovers, dialogs) and those controls |
-| `shared-daterangecontrol-datecontrol.js` + `daterangecontrol.js` + `datecontrol.js` | 22.0 kB | a date filter is opened (the calendar: react-day-picker and date-fns) |
-| `shared-stattile-chart.js` + `shared-group-keyvaluecard-stattile-chart.js` + `stattile.js` + `keyvaluecard.js` | 10.7 kB | a chart, stat tile or key-value card is on the page (charts, sparklines, aggregation) |
-| `markdown.js` + `shared-codeview-markdown.js` + `shared-searchdialog-markdown.js` | 7.4 kB | a Markdown item (callouts, steps, heading anchors, code fences) |
-| `shared-codeview-markdown.js` | 2.5 kB | a Preview / Code box (`code: true`, `JsonDeck.example`): the code view and highlighter |
-| `contextmenu.js` + `clipboard.js` | 3.2 kB | right-click on a row (the copy formats also load when rows are selected) |
+| `popups.js` | 60.7 kB | first hover, focus or click on a toolbar control (filter, sort, columns, views, group by, more, export), a column header menu or rows-per-page; a filter pill; the shortcuts dialog. Holds Base UI (menus, popovers, dialogs) and those controls |
+| `shared-daterangecontrol-datecontrol.js` + `daterangecontrol.js` + `datecontrol.js` | 21.9 kB | a date filter is opened (the calendar: react-day-picker and date-fns) |
+| `chartitem.js` + `shared-chartitem-stattile-chart.js` + `shared-chartitem-grouping-keyvaluecard-stattile-chart.js` | 9.5 kB | a chart is on the page (the chart and its page wiring); `stattile.js` (1.2 kB) and `keyvaluecard.js` (1.3 kB) for those widgets |
+| `markdown.js` + `shared-codeview-markdown-itemcode.js` + `shared-searchdialog-markdown.js` | 7.5 kB | a Markdown item (callouts, steps, heading anchors, code fences) |
+| `shared-codeview-markdown-itemcode.js` + `example.js` / `itemcode.js` | 3.0 kB | a Preview / Code box (`JsonDeck.example`, `code: true`): the code view, highlighter and snippet writer |
+| `rowmenu.js` + `shared-copy-rows-rowmenu.js` | 4.1 kB | right-click on a row: the menu, its items and the copy helpers (the copy part also loads when rows are selected) |
+| `extras.js` + `shared-extras-explain-issuesbox.js` + `shared-extras-example-itemcode.js` | 4.6 kB | `JsonDeck.ready` is read: `describe`, `htmlSnippet`, `toSource` and the constants (`THEME_TOKENS`, ...) |
+| `shared-extras-explain-issuesbox.js` + `issuesbox.js` | 1.9 kB | the config has issues: the sentences with "did you mean", the issues box, mount's `issues` and console warning |
+| `viewscontrol.js` | 1.6 kB | the Views button is pointed at or clicked; before the first render when a default view is stored (the table opens on it) |
 | `searchdialog.js` | 2.0 kB | decks with site search, once the page is idle |
 | `edittools.js` + `shared-edittools-layout-edit.js` | 2.7 kB | the layout editor is switched on |
-| `rowfeatures.js` | 1.8 kB | a table with `quickFilters`, or rows get selected (selection bar) |
+| `rowfeatures.js` | 1.9 kB | a table with `quickFilters`, or rows get selected (selection bar) |
 | `rowdrawer.js` | 1.6 kB | a row or a link to a related row is opened in the drawer |
 | `rowdetail.js` | 1.4 kB | a row is expanded (detail fields, nested tables) |
+| `grouping.js` | 1.4 kB | a table is grouped (grouping, totals and the group rows) |
+| `toast.js` | 1.1 kB | the first toast (after a copy) |
 | `toc.js` | 1.1 kB | an "On this page" outline |
-| `group.js` | 0.7 kB | a table is grouped |
-| `issuesbox.js` | 0.5 kB | the config has issues |
-| `shared-*.js` (seven files under 1 kB each) | | small pieces two of the parts above share |
+| `relations.js` | 0.9 kB | right after the first render of a deck with `relations` |
+| `sidebarnav.js` | 0.8 kB | before the first render of a deck with `nav: "sidebar"` |
+| `deckbuttons.js` | 0.8 kB | before the first render of a deck with a theme toggle or the layout editor (every deck with `pages`) |
+| `facets.js` | 0.8 kB | a facets item or a table's `facets` sidebar |
+| `pagefilterbar.js` | 0.7 kB | before the first render of a deck with page `filters` |
+| `emptystate.js` | 0.7 kB | a table shows no rows ("No rows" / "No matches") |
+| `shortcuts.js` | 0.4 kB | the first key press, or the first click in a table ("/" focuses search even before it arrives) |
+| `drag.js` | 0.4 kB | the pointer enters a table header, or the first press on a resize handle or drag of a column |
+| `pinning.js` | 0.3 kB | before the first render of a table with pinned columns |
+| `shared-*.js` (about a dozen files under 1 kB each) | | small pieces two of the parts above share |
 
 Every file has a `.map` source map beside it, and `dist/types/` holds the type definitions. jsDelivr serves gzip or brotli (brotli is about 15% smaller). Measure with `node scripts/size.mjs`; see what is inside each chunk with `pnpm analyze` and `node scripts/chunk-report.mjs`. Most of the core is React DOM (about 60 kB gzipped); the table engine, config resolution and the toolbar make up the rest.
 
@@ -254,7 +266,7 @@ task release       # the same, then asks, commits, tags, pushes and creates the 
    - `scripts/verify-site.mjs` that walks every route in light and dark
 2. **First release:** make the GitHub repo public, run `task release` for `v0.1.0`, check the jsDelivr links, then mark the CDN and ESM features stable in `docs-content/features.json`.
 3. **Page filter dropdowns:** restyle the page-level filter selects (Severity, Region…) to match the rest of the UI instead of plain browser selects.
-4. **First-load size:** a plain table page now downloads about 115 kB of JavaScript, about 60 kB of it React DOM. Further savings would come from splitting more of the table core (the right-click menu items, saved views, the page editor state) or from a smaller calendar of our own (the date calendar chunk is about 21 kB gzipped).
+4. **First-load size:** a plain table page now downloads about 105 kB of JavaScript, about 66 kB of it React and React DOM. What is left of our own code (about 37 kB) is what the first paint uses: config resolution and type guessing, the table, the toolbar, cells, pagination and the page shell. Further savings would come from a smaller calendar of our own (the date calendar chunk is about 22 kB gzipped).
 5. **Saved views by URL:** share a saved view as a link.
 6. **Load data from a URL:** today data must be embedded in the page or passed as an object.
 

@@ -37,6 +37,15 @@ const col = async (label) => {
 	return active().locator("tbody tr").evaluateAll((trs, i) => trs.map((tr) => tr.children[i]?.textContent ?? ""), i)
 }
 const range = () => active().locator('[data-jd="range"]').textContent()
+/** The range once it starts with `prefix` (up to 1 s): the first shortcut key is replayed when its on-demand chunk arrives. */
+const rangeSoon = async (prefix) => {
+	for (let i = 0; i < 20; i++) {
+		const r = await range()
+		if (r.startsWith(prefix)) return r
+		await page.waitForTimeout(50)
+	}
+	return range()
+}
 const count = () => active().locator('[data-jd="count"]').textContent()
 const settle = () => page.waitForTimeout(450) // SearchInput debounces 300ms
 const tab = async (n) => { await page.locator(`[data-jd-tab="${n}"]`).click(); await page.waitForTimeout(100) }
@@ -56,7 +65,7 @@ const n1 = await col(1)
 await active().getByLabel("Next page").click()
 check("next page changes rows", (await range()) === "51–100 of 300" && (await col(1))[0] !== n1[0], await range())
 await page.keyboard.press("ArrowLeft")
-check("ArrowLeft goes back", (await range()).startsWith("1–"), await range())
+check("ArrowLeft goes back", (await rangeSoon("1–")).startsWith("1–"), await range())
 await page.keyboard.press("ArrowRight")
 check("ArrowRight goes forward", (await range()).startsWith("51–"), await range())
 await active().getByLabel("Last page").click()

@@ -4,7 +4,7 @@
 // minifier options and how chunks are grouped.
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
-import type { Alias, BuildEnvironmentOptions } from "vite"
+import type { Alias, BuildEnvironmentOptions, Plugin } from "vite"
 
 export const src = (p: string) => fileURLToPath(new URL(`./src/${p}`, import.meta.url))
 
@@ -13,6 +13,23 @@ export const ALIASES: Alias[] = [
 	{ find: /^@\/components\/ui\//, replacement: `${src("ui")}/` },
 	{ find: /^@\/lib\//, replacement: `${src("lib")}/` },
 ]
+
+/**
+ * lucide-react's icon modules all import `../createLucideIcon.mjs`; point that
+ * at src/lib/lucide-lite.ts, a few lines that draw the same <svg>, so lucide's
+ * generic runtime stays out of every bundle (see that file for what it covers).
+ */
+export function lucideLite(): Plugin {
+	const target = src("lib/lucide-lite.ts")
+	return {
+		name: "jsondeck-lucide-lite",
+		enforce: "pre",
+		resolveId(source, importer) {
+			if (importer?.includes("lucide-react") && /(^|\/)createLucideIcon\.mjs$/.test(source)) return target
+			return null
+		},
+	}
+}
 
 /**
  * Always a production build: drops React and Base UI dev-only code, and leaves no

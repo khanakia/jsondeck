@@ -6,7 +6,7 @@
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, esmExternalRequirePlugin } from "vite"
-import { ALIASES, CHUNK_NAMES, CODE_SPLITTING, DEFINE, MINIFY_ESM } from "./vite.shared"
+import { ALIASES, CHUNK_NAMES, CODE_SPLITTING, DEFINE, MINIFY_ESM, lucideLite } from "./vite.shared"
 
 const PEERS = [/^react$/, /^react\//, /^react-dom$/, /^react-dom\//]
 
@@ -20,7 +20,7 @@ const PEERS = [/^react$/, /^react\//, /^react-dom$/, /^react-dom\//]
 // Proven by the esm case in scripts/verify-cdn.mjs.
 
 export default defineConfig({
-	plugins: [react(), tailwindcss(), esmExternalRequirePlugin({ external: PEERS })],
+	plugins: [lucideLite(), react(), tailwindcss(), esmExternalRequirePlugin({ external: PEERS })],
 	resolve: { alias: ALIASES },
 	define: DEFINE,
 	build: {

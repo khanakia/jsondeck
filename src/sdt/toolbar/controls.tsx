@@ -21,14 +21,11 @@ import type { PageSizeSelect as RealPageSize } from "../pagination/PageSizeSelec
 import type { GroupByMenu as RealGroupBy, MoreMenu as RealMore } from "../rows/ToolbarMenus"
 import type { SortDropdown as RealSort } from "../sort/SortDropdown"
 import type { TableExportButton as RealExport } from "./TableExportButton"
-import type { ViewSelector as RealViews } from "../views/ViewSelector"
-import { isModified } from "../views/modified"
-import { ColumnsTrigger, ExportTrigger, FilterTrigger, GroupTrigger, groupTip, HeaderMenuTrigger, MoreTrigger, PageSizeTrigger, SortTrigger, sortTip, ViewsTrigger, viewsTip } from "./triggers"
+import { ColumnsTrigger, ExportTrigger, FilterTrigger, GroupTrigger, groupTip, HeaderMenuTrigger, MoreTrigger, PageSizeTrigger, SortTrigger, sortTip } from "./triggers"
 
 type FilterPickerProps = React.ComponentProps<typeof RealFilterPicker<unknown>>
 type SortProps = React.ComponentProps<typeof RealSort>
 type ColumnsProps = React.ComponentProps<typeof RealColumnsMenu<Row>>
-type ViewsProps = React.ComponentProps<typeof RealViews>
 type GroupProps = React.ComponentProps<typeof RealGroupBy>
 type MoreProps = React.ComponentProps<typeof RealMore>
 type ExportProps = React.ComponentProps<typeof RealExport<Row>>
@@ -60,16 +57,6 @@ export const ColumnVisibilityMenu = deferredControl(popups, (m) => m.ColumnVisib
 	return (
 		<Tip label={L.columns} hint="c">
 			<ColumnsTrigger hiddenCount={p.hiddenColumns.length} />
-		</Tip>
-	)
-})
-
-export const ViewSelector = deferredControl(popups, (m) => m.ViewSelector, function ViewsStand(p: ViewsProps) {
-	const L = useLabels()
-	const active = p.views.find((v) => v.id === p.activeViewId) ?? null
-	return (
-		<Tip label={viewsTip(L, active?.name)} hint="v">
-			<ViewsTrigger activeName={active?.name} modified={isModified(p.state, active)} />
 		</Tip>
 	)
 })

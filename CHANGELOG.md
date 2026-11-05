@@ -4,6 +4,15 @@ All notable changes to jsondeck are written down here. The format follows [Keep 
 
 ## [Unreleased]
 
+### Changed
+
+- A plain table page downloads about 105 kB of JavaScript instead of 115 kB (gzip, React included). More of the core loads only when used: the config issue messages and "did you mean" suggestions (only when a config has problems), saved views (on the first hover or click of the Views button), column resize and drag-reorder (when the pointer enters a header), the keyboard shortcuts (on the first key press; "/" still focuses search on the very first press), the right-click menu items and copy helpers, grouping, toasts, the empty-table message, the relation index, chart and facets items, and `describe` / `htmlSnippet` / the constants.
+- Parts that change the first paint load before it, so nothing jumps: a stored default saved view (the table now opens on it directly, with no flash of the unfiltered rows), pinned columns, the sidebar navigation, the page filter bar and the header's theme and edit buttons.
+- `mount(...).issues` and the console warning fill in when `handle.ready` resolves, also in the ES module and the offline file (the messages are loaded on demand). The deck's issues box is unchanged.
+- With the `<script>` loader, `describe`, `htmlSnippet`, `toSource` and the constants need `await JsonDeck.ready` (as documented); `handle.ready` no longer guarantees them.
+- Resizing a column now starts from its current width (it used to start from 160px for a column that had not been resized, so the first drag could jump).
+- The lucide icons are drawn by a few lines of our own instead of lucide's runtime (same SVG); the class merger's tables list only the utilities jsondeck uses (`scripts/check-merge.mjs` still finds no difference from tailwind-merge).
+
 ## [0.1.1] - 2026-11-05
 
 ### Changed

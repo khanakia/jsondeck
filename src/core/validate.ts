@@ -1,44 +1,75 @@
 /**
- * Config issues and "did you mean" suggestions. Pure.
+ * Config issues, the part the first download carries. Pure.
+ *
+ * Resolving a config still finds every problem (a bad key or value is skipped
+ * so the rest renders), but it only records *what* is wrong: a short code plus
+ * the offending word and the names it could have meant. The sentences and the
+ * "did you mean" search live in explain.ts, an on-demand chunk loaded only
+ * when a config has issues, so a valid config never downloads them.
+ *
+ * Public form: `Issue` ({ path, message }), produced by `explainIssue`.
  */
 
+/** "tables.findings.columns.sevrity: no such column (did you mean severity?)" */
 export type Issue = { path: string; message: string }
 
-export function issue(path: string, message: string, suggestion?: string): Issue {
-	return { path, message: suggestion ? `${message} (did you mean ${suggestion}?)` : message }
+/**
+ * Every kind of problem resolve.ts and layout.ts report. The sentence for each
+ * is in explain.ts (MESSAGES); a code missing there is a type error.
+ */
+export type IssueCode =
+	| "key"
+	| "object"
+	| "oneOf"
+	| "posNum"
+	| "sortShape"
+	| "noColumn"
+	| "noColumnQ"
+	| "noColumnIn"
+	| "noTable"
+	| "noTableQ"
+	| "typeOrObj"
+	| "unknownType"
+	| "colorsObj"
+	| "tone"
+	| "unknownFormat"
+	| "formatShape"
+	| "sortFn"
+	| "idList"
+	| "searchShape"
+	| "list"
+	| "filterShape"
+	| "filterOff"
+	| "quickShape"
+	| "detector"
+	| "detectorType"
+	| "label"
+	| "pageSizes"
+	| "relationShape"
+	| "tokensObj"
+	| "token"
+	| "cssValue"
+	| "slotsObj"
+	| "slot"
+	| "component"
+	| "componentShape"
+	| "gridColumns"
+	| "noTableHasColumn"
+	| "pagesList"
+
+/**
+ * One problem as resolve records it. `arg` is the offending word (shown in the
+ * sentence and matched against `pool` for "did you mean"); `pool` is also the
+ * list some sentences print ("must be one of …"); `extra` is a second word
+ * (the table in "no such column "x" in hosts").
+ */
+export type RawIssue = { path: string; code: IssueCode; arg?: string | undefined; pool?: readonly string[] | undefined; extra?: string | undefined }
+
+export function issue(path: string, code: IssueCode, arg?: string, pool?: readonly string[], extra?: string): RawIssue {
+	return { path, code, arg, pool, extra }
 }
 
-/** Edit distance (Levenshtein), small strings only. */
-function distance(a: string, b: string): number {
-	const dp = Array.from({ length: b.length + 1 }, (_, i) => i)
-	for (let i = 1; i <= a.length; i++) {
-		let prev = dp[0] ?? 0
-		dp[0] = i
-		for (let j = 1; j <= b.length; j++) {
-			const tmp = dp[j] ?? 0
-			dp[j] = Math.min(tmp + 1, (dp[j - 1] ?? 0) + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1))
-			prev = tmp
-		}
-	}
-	return dp[b.length] ?? 0
-}
-
-/** The closest candidate within a third of the word's length (at least 2 edits), case-insensitive. */
-export function closest(word: string, candidates: string[]): string | undefined {
-	const w = word.toLowerCase()
-	let best: string | undefined
-	let bestD = Math.max(2, Math.floor(w.length / 3)) + 1
-	for (const c of candidates) {
-		const d = distance(w, c.toLowerCase())
-		if (d < bestD) {
-			best = c
-			bestD = d
-		}
-	}
-	return best
-}
-
-/** "tables.findings.columns.sevrity: no such column (did you mean severity?)" */
-export function formatIssue(i: Issue): string {
-	return i.path ? `${i.path}: ${i.message}` : i.message
+/** Same problem at the same place (pool aside: two runs build equal lists). */
+export function sameIssue(a: RawIssue, b: RawIssue): boolean {
+	return a.path === b.path && a.code === b.code && a.arg === b.arg && a.extra === b.extra
 }
