@@ -1,6 +1,6 @@
 {
   "name": "jsondeck",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Turn JSON plus a small config into a compact dashboard: tables with filters, sort, grouping and saved views, charts, stat tiles and linked tables. One script tag from a CDN, or an ES module for React apps.",
   "keywords": [
     "json",

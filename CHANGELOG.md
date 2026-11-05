@@ -4,6 +4,8 @@ All notable changes to jsondeck are written down here. The format follows [Keep 
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-05
+
 ### Changed
 
 - `dist/jsondeck.js` is now a small loader (about 2 kB gzipped) instead of the whole library. It loads the core (React and the table) from `dist/chunks/` next to itself, and every other part only when a page uses it: charts and stat tiles, the menus and popovers (on the first hover or click), the date calendar, the row drawer, expanded rows, the right-click menu and copy formats, the layout editor, the code view, site search and the config issues box. A plain table page now downloads about 115 kB of JavaScript instead of 219 kB.
