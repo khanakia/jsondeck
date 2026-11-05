@@ -1,0 +1,2 @@
+/*! jsondeck v0.1.1 | MIT License | github.com/khanakia/jsondeck */
+import{$ as s,X as a,Y as t,a as o,ct as r,d as e,et as p,ft as c,ht as f,i,n as m,o as d,ot as h,pt as j,r as n,st as u,t as x,u as X}from"./core.js";export{a as BUILTIN_FORMATS,h as CLASS_SLOTS,c as DEFAULT_ACRONYMS,t as DEFAULT_GUESS,j as DEFAULT_LABELS,u as THEME_TOKENS,r as TOKEN_NAMES,o as defineConfig,x as describe,m as example,X as htmlSnippet,f as humanize,n as mount,s as pageTheme,i as ready,p as setTheme,e as toSource,d as version};
