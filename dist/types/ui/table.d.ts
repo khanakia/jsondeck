@@ -1,0 +1,12 @@
+import type * as React from "react";
+export declare function Table({ className, ...props }: React.ComponentProps<"table">): React.JSX.Element;
+export declare function THead(props: React.ComponentProps<"thead">): React.JSX.Element;
+export declare function TBody(props: React.ComponentProps<"tbody">): React.JSX.Element;
+export declare function TR({ className, ...props }: React.ComponentProps<"tr">): React.JSX.Element;
+export declare function TH({ className, ...props }: React.ComponentProps<"th">): React.JSX.Element;
+export declare function TD({ className, ...props }: React.ComponentProps<"td">): React.JSX.Element;
+export declare const TableHeader: typeof THead;
+export declare const TableBody: typeof TBody;
+export declare const TableRow: typeof TR;
+export declare const TableHead: typeof TH;
+export declare const TableCell: typeof TD;
