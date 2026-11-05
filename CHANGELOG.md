@@ -4,6 +4,8 @@ All notable changes to jsondeck are written down here. The format follows [Keep 
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-05
+
 ### Changed
 
 - `jsondeck.js` no longer bundles any library. React, React DOM and the scheduler, Base UI with floating-ui, react-day-picker with date-fns, clsx and class-variance-authority load from the public JSPM CDN (`ga.jspm.io`; `reselect` from jsDelivr) at the exact versions jsondeck is built with, each only when needed: React with the first render, Base UI with the first menu or popover, the calendar libraries when a date filter opens. jsondeck's own JavaScript on a plain table page is about 40 kB (gzip); with React from the CDN the page downloads about 110 kB. The first menu and the first date filter now fetch more than before (the CDN serves whole library entry points), and the CDN files can be shared through the browser cache.
