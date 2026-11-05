@@ -1,0 +1,4 @@
+/*! jsondeck v0.1.2 | MIT License | github.com/khanakia/jsondeck */
+import{ct as e,h as r,lt as t,s as a,v as i,xt as o}from"./core.js";import{t as s}from"./shared-extras-example-itemcode.js";import{jsx as d}from"react/jsx-runtime";function c(a){const c="dark"===t(),n=a.code??(a.config?s(a.config,{version:"0.1.2"}):"");/* @__PURE__ */
+return d("div",{className:e("jd-root",c&&"jd-dark"),"data-jd":"example",children:/* @__PURE__ */d(o.Provider,{value:a.labels,children:/* @__PURE__ */d(i,{children:/* @__PURE__ */d(r,{title:a.title,description:a.description,code:n,lang:a.lang,preview:a.preview})})})})}export{c as ExampleShell};
+//# sourceMappingURL=example.js.map

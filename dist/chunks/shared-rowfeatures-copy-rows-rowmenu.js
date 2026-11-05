@@ -1,0 +1,3 @@
+/*! jsondeck v0.1.2 | MIT License | github.com/khanakia/jsondeck */
+var t=["json","csv","tsv","markdown","text"];async function e(t){if("undefined"!=typeof navigator&&navigator.clipboard?.writeText)try{return await navigator.clipboard.writeText(t),!0}catch{}return function(t){if("undefined"==typeof document)return!1;const e=document.createElement("textarea");e.value=t,e.setAttribute("readonly",""),e.style.position="fixed",e.style.top="0",e.style.left="0",e.style.opacity="0",document.body.appendChild(e);const n=document.activeElement;try{return e.select(),document.execCommand("copy")}catch{return!1}finally{e.remove(),n instanceof HTMLElement&&n.focus()}}(t)}export{e as n,t};
+//# sourceMappingURL=shared-rowfeatures-copy-rows-rowmenu.js.map

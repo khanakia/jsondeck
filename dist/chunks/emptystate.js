@@ -1,0 +1,6 @@
+/*! jsondeck v0.1.2 | MIT License | github.com/khanakia/jsondeck */
+import{Rt as e,wt as t}from"./core.js";import{jsx as d,jsxs as r}from"react/jsx-runtime";var n=e({name:"inbox",size:24,node:[["polyline",{points:"22 12 16 12 14 15 10 15 8 12 2 12",key:"o97t9d"}],["path",{d:"M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z",key:"oot6mr"}]]});function s({message:e,description:s,action:o,filtered:j,onClearFilters:i}){const m=t();/* @__PURE__ */
+return r("div",{className:"jd:flex jd:flex-col jd:items-center jd:justify-center jd:py-16 jd:px-4 jd:text-center",children:[
+/* @__PURE__ */d("div",{className:"jd:bg-muted/50 jd:text-muted-foreground jd:mb-4 jd:flex jd:h-12 jd:w-12 jd:items-center jd:justify-center jd:rounded-full",children:/* @__PURE__ */d(n,{className:"jd:h-6 jd:w-6"})}),
+/* @__PURE__ */d("h3",{className:"jd:text-foreground jd:text-base jd:font-medium",children:e??(j?m.noResults:m.nothingToShow)}),s&&/* @__PURE__ */d("p",{className:"jd:text-muted-foreground jd:mt-1 jd:max-w-sm jd:text-sm",children:s}),j&&i&&/* @__PURE__ */d("button",{type:"button",onClick:i,className:"jd:text-primary jd:mt-4 jd:text-sm jd:hover:underline",children:m.clearFilters}),!j&&o&&/* @__PURE__ */d("div",{className:"jd:mt-4",children:o})]})}export{s as EmptyState};
+//# sourceMappingURL=emptystate.js.map

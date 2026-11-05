@@ -1,0 +1,3 @@
+/*! jsondeck v0.1.2 | MIT License | github.com/khanakia/jsondeck */
+import{b as o}from"./core.js";var n={"/":"onSlash",f:"onF",F:"onF",v:"onV",V:"onV",c:"onC",C:"onC",s:"onS",S:"onS","?":"onQuestion",ArrowLeft:"onArrowLeft",ArrowRight:"onArrowRight",Escape:"onEscape"};function e(o,e,r){const t=n[o],s=t?e[t]:void 0;return!!s&&("Escape"!==o&&r(),s(),!0)}function r(n){const r=r=>{o(r)||e(r.key,n(),()=>r.preventDefault())};return window.addEventListener("keydown",r),()=>window.removeEventListener("keydown",r)}export{r as listenShortcuts,e as runShortcut};
+//# sourceMappingURL=shortcuts.js.map

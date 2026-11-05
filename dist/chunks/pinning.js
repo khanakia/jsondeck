@@ -1,0 +1,3 @@
+/*! jsondeck v0.1.2 | MIT License | github.com/khanakia/jsondeck */
+function t(t,e,o){const r=/* @__PURE__ */new Map;let i=0;for(const d of t)"left"===e(d.id)&&(r.set(d.id,{position:"sticky",left:i,zIndex:2}),i+=o(d));let n=0;for(const d of[...t].reverse())"right"===e(d.id)&&(r.set(d.id,{position:"sticky",right:n,zIndex:2}),n+=o(d));return r}function e(t){return"left"===t?"jd:border-r":"right"===t?"jd:border-l":void 0}export{e as pinEdge,t as pinOffsets};
+//# sourceMappingURL=pinning.js.map

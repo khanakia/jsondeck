@@ -1,0 +1,4 @@
+/*! jsondeck v0.1.2 | MIT License | github.com/khanakia/jsondeck */
+import{F as e,ct as o,mt as r,pt as t}from"./core.js";import{jsx as a}from"react/jsx-runtime";var n=t(e,e=>e.DropdownMenu,e=>e.DropdownMenuTrigger,"menu"),d=n.Root,s=n.Trigger,p=r(e,e=>e.DropdownMenuContent),u=r(e,e=>e.DropdownMenuGroup),i=r(e,e=>e.DropdownMenuItem),m=r(e,e=>e.DropdownMenuSeparator);function j({className:e,inset:r,...t}){/* @__PURE__ */
+return a("div",{"data-slot":"dropdown-menu-label","data-inset":r,className:o("jd:px-2 jd:py-1 jd:text-[11px] jd:font-semibold jd:uppercase jd:tracking-wider jd:text-muted-foreground jd:data-[inset]:pl-7",e),...t})}export{j as a,i,p as n,m as o,u as r,s,d as t};
+//# sourceMappingURL=shared-popups-rowfeatures.js.map

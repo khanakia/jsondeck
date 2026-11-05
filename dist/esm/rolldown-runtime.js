@@ -1,0 +1,2 @@
+/*! jsondeck v0.1.2 | MIT License | github.com/khanakia/jsondeck */
+var e=Object.defineProperty,r=(e,r)=>()=>(r||(e((r={exports:{}}).exports,r,r.exports),e=null),r.exports),t=(r,t)=>{let o={};for(var a in r)e(o,a,{get:r[a],enumerable:!0});return t||e(o,Symbol.toStringTag,{value:"Module"}),o};export{t as n,r as t};

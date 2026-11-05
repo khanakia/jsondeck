@@ -1,0 +1,8 @@
+/*! jsondeck v0.1.2 | MIT License | github.com/khanakia/jsondeck */
+import{et as e,h as t}from"./core.js";import{jsx as d,jsxs as a}from"react/jsx-runtime";function s({item:s,ctx:r,fields:n}){const l=t(r,s.table??""),j=r.deck.tables.find(e=>e.name===s.table);/* @__PURE__ */
+return d("div",{className:"jd:flex jd:flex-col jd:gap-3","data-jd":"facets",children:n.map(t=>{const n=/* @__PURE__ */new Map;for(const d of l){const a=e(d[t])||"(empty)";n.set(a,(n.get(a)??0)+1)}const c=[...n.entries()].sort((e,t)=>t[1]-e[1]).slice(0,12),i=c[0]?.[1]??1,o=j?.columns.find(e=>e.id===t)?.label??t;/* @__PURE__ */
+return a("div",{children:[/* @__PURE__ */d("div",{className:"jd:text-muted-foreground jd:mb-1 jd:text-[10px] jd:font-semibold jd:uppercase jd:tracking-wider",children:o}),/* @__PURE__ */d("div",{className:"jd:flex jd:flex-col",children:c.map(([e,n])=>/* @__PURE__ */a("button",{type:"button","data-jd-facet":`${t}=${e}`,onClick:()=>r.select(s,t,e),className:"jd:hover:bg-muted jd:relative jd:flex jd:h-6 jd:cursor-pointer jd:items-center jd:justify-between jd:gap-2 jd:rounded jd:px-1.5 jd:text-left jd:text-[12px]",children:[
+/* @__PURE__ */d("span",{className:"jd:bg-primary/10 jd:absolute jd:inset-y-0.5 jd:left-0 jd:rounded",style:{width:n/i*100+"%"}}),
+/* @__PURE__ */d("span",{className:"jd:relative jd:truncate",children:e}),
+/* @__PURE__ */d("span",{className:"jd:text-muted-foreground jd:relative jd:tabular-nums",children:n})]},e))})]},t)})})}export{s as Facets};
+//# sourceMappingURL=facets.js.map

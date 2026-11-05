@@ -1,0 +1,2 @@
+/*! jsondeck v0.1.2 | MIT License | github.com/khanakia/jsondeck */
+import{Dt as a,Tt as s,a as t,at as r,c as o,d as e,i,it as m,l as c,lt as l,n as p,r as u,t as d,u as f,ut as j,vt as n,wt as v,yt as w}from"./esm/core.js";export{r as BUILTIN_FORMATS,n as CLASS_SLOTS,v as DEFAULT_ACRONYMS,m as DEFAULT_GUESS,s as DEFAULT_LABELS,u as THEME_TOKENS,w as TOKEN_NAMES,d as defineConfig,p as describe,o as example,i as htmlSnippet,a as humanize,c as mount,l as pageTheme,f as ready,j as setTheme,t as toSource,e as version};

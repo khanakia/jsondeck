@@ -1,0 +1,2 @@
+/*! jsondeck v0.1.2 | MIT License | github.com/khanakia/jsondeck */
+import{dt as s,i as a,n as r,r as t,s as o,t as e,ut as i}from"./core.js";export{r as defineConfig,t as example,e as loadExtras,a as mount,i as pageTheme,s as setTheme,o as version};
