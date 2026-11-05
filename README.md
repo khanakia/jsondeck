@@ -45,23 +45,6 @@ jsondeck is for the case where you have JSON and want a usable, good-looking vie
 - **One file, offline.** One script tag (CSS included), no fetch, no telemetry, works from `file://`.
 - **Typed.** `defineConfig(data, config)` checks table and column names against your data, so a typo is a type error.
 
-How it compares, as far as we know (check each project's docs for the current state):
-
-| | Hand-written HTML table | DataTables | AG Grid | Grid.js | Tabulator | jsondeck |
-|---|---|---|---|---|---|---|
-| Setup from JSON | write the markup yourself | JS config per table | JS config per grid | JS config per grid | JS config per table | zero config, types guessed |
-| Search, sort, paging | write it yourself | yes | yes | yes | yes | yes |
-| Per-column filters | write it yourself | through extensions | yes | no, as far as we know | yes | yes, plus quick filters |
-| Grouping with totals | write it yourself | through an extension | in the paid Enterprise edition | no | yes | yes |
-| Charts and stat tiles from the same data | no | no | integrated charts are Enterprise | no | no | yes |
-| Pages, sections, linked tables | write it yourself | no | master-detail is Enterprise | no | nested tables | yes |
-| Dependencies | none | jQuery | none | none | none | none (React is bundled in the script) |
-| Very large data sets | slow past a few thousand rows | server-side mode | virtual rows, server-side models | server-side mode | virtual rows, remote data | in memory only, paginated; no server mode yet |
-| Size | smallest | medium | large | very small | medium | large (about 190 kB brotli for the one-tag file) |
-| License | yours | MIT | MIT Community, paid Enterprise | MIT | MIT | MIT |
-
-Pick a dedicated grid when you need millions of rows, server-side data or spreadsheet-style editing. Pick jsondeck when you have JSON and want a full read-only dashboard over it with no code.
-
 ## Install
 
 jsondeck is served from GitHub through jsDelivr. Always pin the version tag (`@v0.1.0`) so a later release never changes your page. It is not on npm; that may come later.
