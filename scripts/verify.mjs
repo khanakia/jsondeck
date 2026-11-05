@@ -1,6 +1,6 @@
 // Headless check of the demo: node scripts/verify.mjs <url> <shot-prefix>
 // Part 1 runs the generic table checks on the zero-config DNS tab; part 2
-// checks each override group the demo config uses (findings, ec2, accounts).
+// checks each override group the demo config uses (findings, ec2).
 import { chromium } from "playwright"
 import { rowHeightOffenders } from "./row-heights.mjs"
 import { scrollOffenders } from "./scroll-audit.mjs"
@@ -31,7 +31,7 @@ const tab = async (n) => { await page.locator(`[data-jd-tab="${n}"]`).click(); a
 await page.goto(url)
 await page.waitForSelector("[data-jd-tab]")
 const tabs = await page.locator("[data-jd-tab]").allTextContents()
-check("4 tabs in tableOrder, labels with acronyms", tabs.join("|") === "Findings120|EC260|DNS300|Accounts8", tabs.join(" | "))
+check("3 tabs in tableOrder, labels with acronyms", tabs.join("|") === "Findings120|EC260|DNS300", tabs.join(" | "))
 await page.screenshot({ path: `${prefix}-light.png` })
 
 // ── Part 1: generic table behaviour on the zero-config DNS tab ──────────────
@@ -94,7 +94,7 @@ await page.screenshot({ path: `${prefix}-columns-menu.png` })
 await page.keyboard.press("Escape")
 check("hide column 'content'", !(await active().locator("thead th").allTextContents()).some((h) => h.startsWith("Content")))
 
-// ── Part 2: override groups (findings, ec2, accounts) ─────────────────────
+// ── Part 2: override groups (findings, ec2) ─────────────────────
 await tab("findings")
 const fh = await active().locator("thead th").allTextContents()
 const plainH = fh.map((h) => h.replace(/\d+$/, ""))
@@ -147,14 +147,7 @@ const eh = await active().locator("thead th").allTextContents()
 check("acronyms in ec2 headers", eh.includes("Public IP") && eh.includes("Instance ID"), eh.join(","))
 await page.screenshot({ path: `${prefix}-ec2.png` })
 
-await tab("accounts")
-const issuesTxt = await page.locator('[data-jd="issues"]').textContent()
-check("error box: unknown key with suggestion", issuesTxt.includes("tables.accounts.pagesize: unknown key (did you mean pageSize?)"), issuesTxt.slice(0, 80))
-check("error box: missing column with suggestion", issuesTxt.includes("tables.accounts.columns.emial: no such column (did you mean email?)"))
-check("error box: bad value + bad format", issuesTxt.includes("plan.pin: must be one of left, right") && issuesTxt.includes('unknown format "curency" (did you mean currency?)'))
-check("bad config table still renders", (await active().locator("tbody tr").count()) === 8 && (await active().locator("thead th").allTextContents()).includes("MRR"))
-check("console.warn for issues", warnings.some((w) => w.includes("[jsondeck] 4 config issue")), warnings[0]?.slice(0, 60))
-await page.screenshot({ path: `${prefix}-accounts-errors.png` })
+check("no config issues box on a valid config", (await page.locator('[data-jd="issues"]').count()) === 0)
 
 const desc = JSON.parse(await page.locator("#describe").textContent())
 check(
@@ -165,7 +158,7 @@ check(
 		desc.tables.findings.columns.risk.computed === true &&
 		desc.tables.findings.columns.detail.filter === false &&
 		desc.tables.findings.defaultSort.join() === "severity,-cvss" &&
-		desc.issues?.length === 4,
+		(desc.issues?.length ?? 0) === 0,
 	`keys: ${Object.keys(desc).join(",")}`,
 )
 

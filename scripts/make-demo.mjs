@@ -1,17 +1,18 @@
 // Writes demo/index.html (3-page dashboard) and demo/tabs.html (no pages).
 // Run: node scripts/make-demo.mjs
 import { writeFileSync } from "node:fs"
-import { accounts, dns, ec2, findings } from "./demo-data.mjs"
+import { dns, ec2, findings } from "./demo-data.mjs"
 
-const data = JSON.stringify({ findings, ec2, dns, accounts }).replace(/</g, "\\u003c")
+const data = JSON.stringify({ findings, ec2, dns }).replace(/</g, "\\u003c")
 
 // Dataset configs shared by both pages (tables.*): findings rich, EC2 with a
-// custom detector + registered type, DNS zero config, accounts with bad keys.
+// custom detector + registered type, DNS zero config. The deliberately bad
+// config example lives only in examples.html ("Config errors").
 const BASE = String.raw`
   const SEVERITY_WEIGHT = { critical: 4, high: 3, medium: 2, low: 1 }
   const config = {
     data: '#data',
-    tableOrder: ['findings', 'ec2', 'dns', 'accounts'],
+    tableOrder: ['findings', 'ec2', 'dns'],
     pageSize: 50,
     labels: { viewsAll: 'All rows' },
     guess: { detectors: [{ type: 'instance-id', test: (vs) => vs.every((v) => /^i-[0-9a-f]{8,}$/.test(String(v))) }] },
@@ -42,19 +43,13 @@ const BASE = String.raw`
           break_risk: { order: ['none', 'low', 'medium', 'high'], colors: { none: 'green', high: 'red' } }
         }
       },
-      ec2: { key: 'instance_id', columns: { launched: { format: 'datetime' }, tags: { format: 'json' } } },
-      accounts: {
-        pagesize: 10,
-        columns: { emial: { type: 'email' }, plan: { pin: 'middle' }, mrr: { label: 'MRR', format: 'curency:USD' } }
-      }
+      ec2: { key: 'instance_id', columns: { launched: { format: 'datetime' }, tags: { format: 'json' } } }
     }
   }
 `
 
 const DASHBOARD = String.raw`
   // Pages place the datasets; a placement may override any table setting.
-  // The deliberately bad accounts config lives in tabs.html and examples.html.
-  delete config.tables.accounts
   config.tableOrder = ['findings', 'ec2', 'dns']
   config.tables.findings.onRowClick = undefined
   config.relations = [
@@ -171,4 +166,4 @@ const TABS_EXTRA = String.raw`
 `
 writeFileSync(new URL("../demo/tabs.html", import.meta.url), page("jsondeck tabs", BASE + TABS_EXTRA))
 writeFileSync(new URL("../demo/index.html", import.meta.url), page("jsondeck dashboard", BASE + DASHBOARD))
-console.log("demo/index.html (dashboard) + demo/tabs.html (default tabs) written:", findings.length, ec2.length, dns.length, accounts.length)
+console.log("demo/index.html (dashboard) + demo/tabs.html (default tabs) written:", findings.length, ec2.length, dns.length)
