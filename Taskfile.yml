@@ -31,13 +31,18 @@ tasks:
     cmds:
       - node scripts/check-merge.mjs
 
+  gen:externals:
+    desc: Rewrite src/externals/*.gen.ts (the CDN import map + preload lists) from the installed versions; needs network; run after changing a dependency (the build fails until you do)
+    cmds:
+      - node scripts/gen-externals.mjs
+
   build:viz:
     desc: Build the charts demo bundle (dist-viz/) that demo/viz.html and verify-viz.mjs load
     cmds:
       - pnpm build:viz
 
   verify:
-    desc: Every headless suite over http and file://, plus the CDN load check (run build and build:viz first)
+    desc: Every headless suite over http and file://, plus the CDN load check (run build and build:viz first; the http pass needs internet, React and the libraries come from ga.jspm.io)
     cmds:
       - scripts/verify-all.sh
 

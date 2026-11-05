@@ -7,3 +7,9 @@ declare const __JSONDECK_VERSION__: string
  * imports statically, relative to dist/, fetched in parallel with it.
  */
 declare const __JSONDECK_PRELOAD__: string[]
+/**
+ * True only in the split build behind the <script> loader (vite.config.ts),
+ * where every third-party library comes from the CDN through an import map;
+ * false in the single offline file and the ES module (code behind it is removed there).
+ */
+declare const __JSONDECK_EXTERNALS__: boolean

@@ -40,7 +40,17 @@ const pkg: unknown = JSON.parse(readFileSync(new URL("./package.json", import.me
 const version = typeof pkg === "object" && pkg !== null && "version" in pkg && typeof pkg.version === "string" ? pkg.version : "0.0.0"
 
 /** …plus the package version for src/version.ts (it used to be a literal that releases forgot to bump). */
-export const DEFINE = { "process.env.NODE_ENV": JSON.stringify("production"), __JSONDECK_VERSION__: JSON.stringify(version) }
+export const DEFINE = { "process.env.NODE_ENV": JSON.stringify("production"), __JSONDECK_VERSION__: JSON.stringify(version), __JSONDECK_EXTERNALS__: "false" }
+
+/**
+ * Packages the split <script> build leaves as bare imports, to be loaded from
+ * the CDN through the loader's import map (src/externals/map.gen.ts, written
+ * by scripts/gen-externals.mjs). Everything third-party that runs, except
+ * lucide-react: its icons are only SVG path data drawn by src/lib/lucide-lite.ts,
+ * a few kB that the toolbar shows on the first paint, while the CDN would add
+ * one request per icon plus lucide's own runtime.
+ */
+export const EXTERNALS = /^(react|react-dom|scheduler|clsx|class-variance-authority|react-day-picker|date-fns|@base-ui\/react|@base-ui\/utils|@floating-ui\/[^/]+)(\/.*)?$/
 
 /** The one license comment kept in each file; every bundled third-party license comment is dropped (see LICENSE + the packages themselves). */
 export const BANNER = `/*! jsondeck v${version} | MIT License | github.com/khanakia/jsondeck */`

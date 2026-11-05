@@ -68,9 +68,22 @@ export const RowDetail = React.lazy(() => import("../sdt/rows/RowDetail").then((
 export const QuickFilters = React.lazy(() => import("../sdt/rows/RowFeatures").then((m) => ({ default: m.QuickFilters })))
 /** "n selected · Copy as … · Clear" bar, once rows are selected. */
 export const SelectionBar = React.lazy(() => import("../sdt/rows/RowFeatures").then((m) => ({ default: m.SelectionBar })))
-/** Date filters with the calendar (react-day-picker + date-fns). */
-export const DateControl = React.lazy(() => import("../sdt/filters/controls/DateControl").then((m) => ({ default: m.DateControl })))
-export const DateRangeControl = React.lazy(() => import("../sdt/filters/controls/DateRangeControl").then((m) => ({ default: m.DateRangeControl })))
+/**
+ * Date filters with the calendar (react-day-picker + date-fns). In the <script>
+ * build those come from the CDN, so their files are preloaded in parallel as the
+ * chunk starts loading (the check is removed at build time in other builds).
+ */
+const calendarFiles = () => {
+	if (__JSONDECK_EXTERNALS__) void import("../externals/preload-calendar").then((m) => m.preload())
+}
+export const DateControl = React.lazy(() => {
+	calendarFiles()
+	return import("../sdt/filters/controls/DateControl").then((m) => ({ default: m.DateControl }))
+})
+export const DateRangeControl = React.lazy(() => {
+	calendarFiles()
+	return import("../sdt/filters/controls/DateRangeControl").then((m) => ({ default: m.DateRangeControl }))
+})
 
 /**
  * What shows while a chunk loads: an empty box of the given height (0 by

@@ -59,7 +59,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "vite build -c vite.full.config.ts && vite build && vite build -c vite.loader.config.ts && vite build -c vite.esm.config.ts && node scripts/make-full.mjs && rm -rf dist/types && tsc -p tsconfig.build.json && node scripts/fix-dts.mjs",
+    "build": "node scripts/gen-externals.mjs --check && vite build -c vite.full.config.ts && vite build && vite build -c vite.loader.config.ts && vite build -c vite.esm.config.ts && node scripts/make-full.mjs && rm -rf dist/types && tsc -p tsconfig.build.json && node scripts/fix-dts.mjs",
+    "gen:externals": "node scripts/gen-externals.mjs",
     "build:full": "vite build -c vite.full.config.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json && node scripts/expect-type-error.mjs",
     "build:viz": "vite build -c src/viz/vite.viz.config.ts",

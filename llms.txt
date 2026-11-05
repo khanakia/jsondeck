@@ -1,6 +1,6 @@
 # jsondeck
 
-> A JavaScript library, loaded from the jsDelivr CDN with one script tag, that turns JSON plus an optional config into a compact interactive dashboard: data tables with search, filters, sort, pagination, grouping, saved views and copy/export, plus charts, stat tiles, key-value cards, Markdown, linked tables and multi-page layouts. No build step, no server, no network calls; works from file://. MIT licensed.
+> A JavaScript library, loaded from the jsDelivr CDN with one script tag, that turns JSON plus an optional config into a compact interactive dashboard: data tables with search, filters, sort, pagination, grouping, saved views and copy/export, plus charts, stat tiles, key-value cards, Markdown, linked tables and multi-page layouts. No build step, no server; the script loads React and its other libraries from a public CDN at pinned versions, and a single offline file (jsondeck.full.js) works from file:// with no network. MIT licensed.
 
 Load it with `<script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.full.js"></script>` and call `JsonDeck.mount('#app', { data: '#data' })`, where `#data` is a `<script type="application/json">` block or `data` is a plain object. With no config, every array becomes a table and column types are guessed. The ES module `dist/jsondeck.mjs` exports `mount` and `defineConfig` and expects React 18+ from the host page. It is not on npm.
 

@@ -1,9 +1,23 @@
 /**
  * dist/jsondeck.js: the classic <script> entry. A few kB with no React in it;
- * it loads the real library (dist/chunks/index.js, an ES module with React
- * bundled in) with `import()`, from next to itself, and every further part of
- * the page (charts, menus, the calendar, ...) loads the same way when first
- * used.
+ * it loads the real library (dist/chunks/index.js, an ES module) with
+ * `import()`, from next to itself, and every further part of the page
+ * (charts, menus, the calendar, ...) loads the same way when first used.
+ *
+ * Our chunks hold only our own code. Every third-party library (React, React
+ * DOM, Base UI, react-day-picker, ...) comes from a public CDN at the exact
+ * version jsondeck was built with: the loader first adds an import map
+ * (src/externals/map.gen.ts) that points each bare specifier ("react",
+ * "@base-ui/react/menu", ...) at one pinned file, so every module on the page,
+ * ours and the libraries', gets the same single React. React comes with the
+ * first render; Base UI only when a menu or popover is first used; the
+ * calendar libraries only when a date filter opens.
+ *
+ * If the page defines its own import map, its entries win: the loader adds
+ * only the specifiers the page does not map (for example, a page that maps
+ * "react" and "react-dom" keeps its own React, and jsondeck uses it). A page
+ * with its own map needs a browser that accepts more than one import map, or
+ * must map every specifier in src/externals/map.gen.ts itself.
  *
  *   <script src=".../dist/jsondeck.js"></script>
  *   <script>JsonDeck.mount("#app", { data })</script>
@@ -22,9 +36,13 @@
  *    page that only mounts never downloads it.
  *
  * Pages opened from file:// cannot load modules (browsers block it), so the
- * loader shows a message pointing at jsondeck.full.js, the single offline file.
+ * loader shows a message pointing at jsondeck.full.js, the single offline file
+ * with everything bundled. Any other load failure is reported in the console.
  */
 import { defineConfig } from "./core/typed"
+import { IMPORT_MAP } from "./externals/map.gen"
+import { FILES as REACT_FILES } from "./externals/react.gen"
+import { OWN_ATTR, pageMappedSpecifiers, preloadExternals } from "./lib/importmap"
 import { pageTheme, restoreTheme, setTheme } from "./lib/theme-dom"
 import { version } from "./version"
 
@@ -69,8 +87,27 @@ function ensureCss(): void {
 }
 ensureCss()
 
-/** Fetch the core and its static dependencies in parallel (else each import is one more round trip). */
+/**
+ * Add the import map for the CDN libraries. It must be in the document before
+ * the first module loads, which is why the classic loader does it, before its
+ * own `import()`. Only specifiers the page does not map itself are added.
+ */
+function installImportMap(): void {
+	if (document.querySelector(`script[type="importmap"][${OWN_ATTR}]`)) return // a second copy of the loader
+	const page = pageMappedSpecifiers()
+	const imports: Record<string, string> = {}
+	for (const [spec, url] of Object.entries(IMPORT_MAP)) if (!page.has(spec)) imports[spec] = url
+	if (Object.keys(imports).length === 0) return
+	const el = document.createElement("script")
+	el.type = "importmap"
+	el.setAttribute(OWN_ATTR, "")
+	el.textContent = JSON.stringify({ imports })
+	;(document.head ?? document.documentElement).appendChild(el)
+}
+
+/** Fetch the core, its static dependencies and React from the CDN in parallel (else each import is one more round trip). */
 function preloadCore(): void {
+	preloadExternals(REACT_FILES)
 	for (const path of __JSONDECK_PRELOAD__) {
 		const href = new URL(path, base).href
 		if (document.querySelector(`link[rel="modulepreload"][href="${href}"]`)) continue
@@ -83,13 +120,15 @@ function preloadCore(): void {
 
 function loadCore(): Promise<Api> {
 	if (base.protocol === "file:") return Promise.reject(new Error(`jsondeck: ${FULL_HINT}`))
+	installImportMap()
 	preloadCore()
 	// The URL is only known at run time; a static string would make bundlers of this file try to resolve it.
 	return import(/* @vite-ignore */ entry).then((m: Api) => m)
 }
 
-/** Shown inside the mount element when the library could not load. */
+/** Shown inside the mount element on file://, where the split build cannot load (other failures go to the console only). */
 function showError(el: Element | string, err: unknown): void {
+	if (base.protocol !== "file:") return
 	const target = typeof el === "string" ? document.querySelector(el) : el
 	if (!target) return
 	const box = document.createElement("div")

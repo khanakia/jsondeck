@@ -45,7 +45,7 @@ Every named array in `data` becomes a table, one tab each. Column types are gues
 
 ## What loads, and when
 
-`jsondeck.js` is a small loader. It fetches the core (React and the table, about 113 kB gzipped) from next to itself, and every other part only when a page uses it: charts and stat tiles when one is on the page, menus and popovers on the first hover or click, the date calendar when a date filter opens, the row drawer, the layout editor, the code view, site search. A plain table page downloads about 115 kB of JavaScript in total.
+`jsondeck.js` is a small loader. It fetches the core (the table, about 37 kB gzipped) from next to itself, and every other part only when a page uses it: charts and stat tiles when one is on the page, menus and popovers on the first hover or click, the date calendar when a date filter opens, the row drawer, the layout editor, the code view, site search. The libraries come from a public CDN (ga.jspm.io) at pinned versions, also only when needed: React with the first render, Base UI with the first menu, react-day-picker and date-fns with the first date filter. A plain table page downloads about 40 kB of jsondeck plus about 70 kB of React.
 
 `JsonDeck.mount` and `JsonDeck.example` can be called right after the script tag: the call waits for the core and returns its handle at once (`handle.ready` resolves once it has rendered). `setTheme`, `pageTheme`, `defineConfig` and `version` work at once too; the rest of the API (`describe`, `htmlSnippet`, `THEME_TOKENS`, ...) is there after `await JsonDeck.ready`.
 

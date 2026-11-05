@@ -1139,7 +1139,7 @@
     "id": "on-demand",
     "name": "On-demand loading",
     "category": "Build & CDN",
-    "summary": "The split build fetches only what a page uses: a plain table page downloads about 115 kB of JavaScript (React included); charts, popups, the calendar, the drawer, the editor and the code view load the first time they are needed.",
+    "summary": "The split build fetches only what a page uses: a plain table page downloads about 40 kB of jsondeck plus React from a public CDN; charts, popups, the calendar, the drawer, the editor and the code view, with the libraries they use (Base UI, react-day-picker, date-fns, from the CDN at pinned versions), load the first time they are needed.",
     "config": null,
     "example": null,
     "since": "0.1.1",

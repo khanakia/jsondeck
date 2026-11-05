@@ -6,7 +6,7 @@ jsondeck's classes are prefixed, its reset applies only inside the deck, and its
 
 ## Works from disk
 
-A page with its data embedded works opened straight from disk (`file://`) with `jsondeck.full.js`, the single file: everything is inside it (CSS included), so it fetches nothing and makes no network calls. Data never leaves the page. The split `jsondeck.js` needs http(s), because browsers block module loading from `file://`; opened from disk it shows a message pointing at `jsondeck.full.js`.
+A page with its data embedded works opened straight from disk (`file://`) with `jsondeck.full.js`, the single file: everything is inside it (CSS included), so it fetches nothing and makes no network calls. Data never leaves the page. The split `jsondeck.js` needs http(s), because browsers block module loading from `file://`; opened from disk it shows a message pointing at `jsondeck.full.js`. Over http(s), `jsondeck.js` loads React and the other libraries from a public CDN (ga.jspm.io) at pinned versions; `jsondeck.full.js` has them all inside.
 
 ```html
 <script type="application/json" id="data">{ "servers": [ { "name": "web-1", "state": "running" } ] }</script>
