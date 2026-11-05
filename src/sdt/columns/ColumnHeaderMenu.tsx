@@ -2,12 +2,11 @@ import { useLabels } from "@/lib/labels"
 import {
 	ArrowDown,
 	ArrowUp,
-	ChevronDown,
 	EyeOff,
 	Filter,
 	X,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { HeaderMenuTrigger } from "../toolbar/triggers"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -73,25 +72,7 @@ export function ColumnHeaderMenu<TNode>({
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon"
-					className={cn(
-						"jd:text-muted-foreground jd:hover:text-foreground jd:-mr-1 jd:h-5 jd:w-5 jd:shrink-0 jd:opacity-0 jd:transition-opacity",
-						"jd:group-hover/header:opacity-100 jd:data-[state=open]:opacity-100",
-						sortDir && "jd:text-foreground jd:opacity-100",
-					)}
-					aria-label="Column menu"
-					onClick={(e) => e.stopPropagation()}
-				>
-					{sortDir === "asc" ? (
-						<ArrowUp className="jd:h-2.5 jd:w-2.5" />
-					) : sortDir === "desc" ? (
-						<ArrowDown className="jd:h-2.5 jd:w-2.5" />
-					) : (
-						<ChevronDown className="jd:h-2.5 jd:w-2.5" />
-					)}
-				</Button>
+				<HeaderMenuTrigger sortDir={sortDir} />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="jd:w-44">
 				{canSort && sortFieldId && (

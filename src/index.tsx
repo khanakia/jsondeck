@@ -23,7 +23,15 @@ export type { ResolvedColumn, ResolvedDeck, ResolvedTable } from "./core/resolve
 /** @deprecated name kept from milestone 1; use JsonDeckConfig. */
 export type MountConfig = JsonDeckConfig
 
-export type Mounted = { unmount: () => void; issues: string[] }
+/**
+ * What mount / example return. `ready` resolves once it has rendered: at once
+ * here; with the <script> loader (dist/jsondeck.js) when the library has
+ * loaded, `issues` filling in at that moment.
+ */
+export type Mounted = { unmount: () => void; issues: string[]; ready: Promise<void> }
+
+/** Resolves when the whole API is usable: at once here; with the <script> loader, once the library has loaded. */
+export const ready: Promise<void> = Promise.resolve()
 
 function resolveEl(el: Element | string): Element {
 	const found = typeof el === "string" ? document.querySelector(el) : el
@@ -50,8 +58,9 @@ function toData(v: unknown): JsonDeckConfig["data"] {
 	return {}
 }
 
-/** Package version (CDN URLs in generated snippets). */
-export const version = "0.1.0"
+import { version } from "./version"
+
+export { version }
 
 const roots = new WeakMap<Element, Root>()
 
@@ -93,6 +102,7 @@ export function mount(el: Element | string, config: JsonDeckConfig): Mounted {
 	root.render(element)
 	return {
 		issues,
+		ready,
 		unmount: () => {
 			root.unmount()
 			roots.delete(target)
@@ -124,6 +134,7 @@ export function example(el: Element | string, opts: ExampleOptions): Mounted {
 	root.render(<ExampleShell labels={built?.deck.labels ?? DEFAULT_LABELS} title={opts.title} description={opts.description} code={code} lang={lang} preview={built?.element} />)
 	return {
 		issues: built?.issues ?? [],
+		ready,
 		unmount: () => {
 			root.unmount()
 			roots.delete(target)

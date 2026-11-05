@@ -14,8 +14,21 @@ const warnings = []
 page.on("console", (m) => (m.type() === "error" ? errors : m.type() === "warning" ? warnings : []).push(m.text()))
 page.on("pageerror", (e) => errors.push(String(e)))
 const results = []
+/**
+ * After a page load: wait until jsondeck has rendered and no on-demand part is
+ * still loading (no `[data-jd="pending"]` placeholder), so a click cannot land
+ * while a chart or tile above is still arriving and moves the layout.
+ */
+const settledLoad = async (pg) => {
+	await pg.waitForSelector('[data-jd="root"], [data-jd="example"]', { timeout: 15000 }).catch(() => undefined)
+	await pg.waitForFunction(() => !document.querySelector('[data-jd="pending"]'), null, { timeout: 15000 }).catch(() => undefined)
+}
 const SCROLL_PAGES = [url]
-const check = (name, ok, info = "") => results.push({ name, ok: !!ok, info })
+const check = (name, ok, info = "") => {
+	results.push({ name, ok: !!ok, info })
+	// VERIFY_TRACE=1 prints each check as it runs (find where a run stops).
+	if (process.env.VERIFY_TRACE) console.log(`  ${ok ? "ok" : "FAIL"}  ${name}`)
+}
 const active = () => page.locator("[data-jd-tabpanel]:not([hidden]) [data-jd-table]")
 const portal = () => page.locator('[data-jd="portal"]')
 const colIdx = async (label) => (await active().locator("thead th").allTextContents()).findIndex((h) => h.replace(/\d+$/, "").toLowerCase() === label.toLowerCase())
@@ -29,6 +42,7 @@ const settle = () => page.waitForTimeout(450) // SearchInput debounces 300ms
 const tab = async (n) => { await page.locator(`[data-jd-tab="${n}"]`).click(); await page.waitForTimeout(100) }
 
 await page.goto(url)
+await settledLoad(page)
 await page.waitForSelector("[data-jd-tab]")
 const tabs = await page.locator("[data-jd-tab]").allTextContents()
 check("3 tabs in tableOrder, labels with acronyms", tabs.join("|") === "Findings120|EC260|DNS300", tabs.join(" | "))
@@ -194,10 +208,12 @@ if (listed) {
 const p2page = await browser.newPage({ viewport: { width: 1400, height: 900 }, colorScheme: "dark" })
 p2page.on("pageerror", (e) => errors.push(String(e)))
 await p2page.goto(url)
+await settledLoad(p2page)
 await p2page.waitForSelector("[data-jd-tab]")
 check("follows prefers-color-scheme: dark", (await p2page.locator("[data-jd-theme]").getAttribute("data-jd-theme")) === "dark")
 // ── M4: quick filters on the findings tab (two-way with the pills) ──
 await page.goto(url)
+await settledLoad(page)
 await page.waitForSelector("[data-jd-tab]")
 {
 	const qf = page.locator('[data-jd-tabpanel]:not([hidden]) [data-jd="quick-filters"]')
@@ -225,6 +241,7 @@ for (const scheme of ["light", "dark"]) {
 	const sb = await browser.newPage({ viewport: { width: 1400, height: 900 }, colorScheme: scheme })
 	for (const u of SCROLL_PAGES) {
 		await sb.goto(u)
+		await settledLoad(sb)
 		await sb.waitForTimeout(700)
 		const offs = await scrollOffenders(sb)
 		check(`no stray scrollbars: ${u.split("/").pop()} (${scheme})`, offs.length === 0, offs.join(" | "))

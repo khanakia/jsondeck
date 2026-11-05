@@ -7,7 +7,7 @@ dotenv: ['.env.local']
 
 tasks:
   build:
-    desc: Build dist/ (IIFE, one-tag full file, ESM, CSS, types, source maps)
+    desc: Build dist/ (the jsondeck.js loader + chunks/, the single offline jsondeck.full.js, jsondeck.mjs + esm/, CSS, types, source maps)
     cmds:
       - pnpm build
 
@@ -22,19 +22,19 @@ tasks:
       - node scripts/size.mjs
 
   analyze:
-    desc: Treemap of what is inside the IIFE bundle (.analyze/stats.html)
+    desc: Treemap of every chunk of the split build (.analyze/stats.html); then `node scripts/chunk-report.mjs [chunk]` lists what is in each
     cmds:
       - pnpm analyze
+
+  check:merge:
+    desc: Prove the class merger (src/lib/merge.ts) matches tailwind-merge on every class in src/
+    cmds:
+      - node scripts/check-merge.mjs
 
   build:viz:
     desc: Build the charts demo bundle (dist-viz/) that demo/viz.html and verify-viz.mjs load
     cmds:
       - pnpm build:viz
-
-  build:preact:
-    desc: Experimental Preact IIFE into dist-preact/ (not published; fails 2 table-filter checks)
-    cmds:
-      - pnpm build:preact
 
   verify:
     desc: Every headless suite over http and file://, plus the CDN load check (run build and build:viz first)

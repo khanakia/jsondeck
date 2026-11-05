@@ -1,0 +1,166 @@
+/**
+ * dist/jsondeck.js: the classic <script> entry. A few kB with no React in it;
+ * it loads the real library (dist/chunks/index.js, an ES module with React
+ * bundled in) with `import()`, from next to itself, and every further part of
+ * the page (charts, menus, the calendar, ...) loads the same way when first
+ * used.
+ *
+ *   <script src=".../dist/jsondeck.js"></script>
+ *   <script>JsonDeck.mount("#app", { data })</script>
+ *
+ * It also links dist/jsondeck.css when the page does not link it already.
+ *
+ * The mount call above runs before the library has arrived, so the loader
+ * keeps the API usable at once:
+ *  - `mount` and `example` are queued and return their handle straight away
+ *    (`issues` fills in once mounted; `unmount` works before or after;
+ *    `ready` resolves when it has rendered);
+ *  - `setTheme`, `pageTheme`, `defineConfig` and `version` work right away;
+ *  - everything else (`describe`, `htmlSnippet`, `THEME_TOKENS`, ...) is there
+ *    once `await JsonDeck.ready` resolves, and throws a clear error before.
+ *
+ * Pages opened from file:// cannot load modules (browsers block it), so the
+ * loader shows a message pointing at jsondeck.full.js, the single offline file.
+ */
+import { defineConfig } from "./core/typed"
+import { pageTheme, restoreTheme, setTheme } from "./lib/theme-dom"
+import { version } from "./version"
+
+type Api = typeof import("./index")
+type MountConfig = Parameters<Api["mount"]>[1]
+type ExampleOptions = Parameters<Api["example"]>[1]
+/** What mount / example return from the loader: the real handle's fields, filled in once rendered. */
+export type Handle = { issues: string[]; unmount: () => void; ready: Promise<void> }
+
+/** Where this file was loaded from. Read while the script runs: `currentScript` is null afterwards. */
+function ownUrl(): string {
+	const current = document.currentScript
+	if (current instanceof HTMLScriptElement && current.src) return current.src
+	// Loaded some other way (async injection, a bundler): fall back to the last script that looks like us.
+	const tags = Array.from(document.querySelectorAll<HTMLScriptElement>("script[src]")).filter((s) => /jsondeck(\.min)?\.js(\?|#|$)/.test(s.src))
+	return tags[tags.length - 1]?.src ?? document.baseURI
+}
+
+const base = new URL(".", ownUrl())
+const entry = new URL("chunks/index.js", base).href
+const FULL_HINT = "Pages opened from file:// cannot load the split build (browsers block module loading there); use jsondeck.full.js instead, the single file with everything in it."
+
+// A theme chosen earlier applies now, before the library arrives (no flash of the wrong theme).
+restoreTheme()
+
+/**
+ * One tag is enough: link jsondeck.css from next to this file unless the page
+ * already has it (a `<link>` to jsondeck.css, or the single file's injected
+ * `<style data-jsondeck>`). It loads in parallel with the library, which
+ * renders nothing before it arrives anyway.
+ */
+function ensureCss(): void {
+	if (document.querySelector("style[data-jsondeck], link[data-jsondeck]")) return
+	for (const l of Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel~="stylesheet"]'))) if (/(^|\/)jsondeck(\.min)?\.css(\?|#|$)/.test(l.getAttribute("href") ?? "")) return
+	const link = document.createElement("link")
+	link.rel = "stylesheet"
+	link.href = new URL("jsondeck.css", base).href
+	link.setAttribute("data-jsondeck", "")
+	;(document.head ?? document.documentElement).appendChild(link)
+}
+ensureCss()
+
+/** Fetch the core and its static dependencies in parallel (else each import is one more round trip). */
+function preloadCore(): void {
+	for (const path of __JSONDECK_PRELOAD__) {
+		const href = new URL(path, base).href
+		if (document.querySelector(`link[rel="modulepreload"][href="${href}"]`)) continue
+		const link = document.createElement("link")
+		link.rel = "modulepreload"
+		link.href = href
+		document.head.appendChild(link)
+	}
+}
+
+function loadCore(): Promise<Api> {
+	if (base.protocol === "file:") return Promise.reject(new Error(`jsondeck: ${FULL_HINT}`))
+	preloadCore()
+	// The URL is only known at run time; a static string would make bundlers of this file try to resolve it.
+	return import(/* @vite-ignore */ entry).then((m: Api) => m)
+}
+
+/** Shown inside the mount element when the library could not load. */
+function showError(el: Element | string, err: unknown): void {
+	const target = typeof el === "string" ? document.querySelector(el) : el
+	if (!target) return
+	const box = document.createElement("div")
+	box.setAttribute("data-jd", "load-error")
+	box.setAttribute("role", "alert")
+	box.style.cssText = "font:13px/1.4 system-ui,sans-serif;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px 10px"
+	box.textContent = err instanceof Error ? err.message : `jsondeck: could not load (${String(err)})`
+	target.replaceChildren(box)
+}
+
+const core = loadCore()
+core.catch((err: unknown) => {
+	console.error(err instanceof Error ? err.message : err, `\n(loader: ${entry})`)
+})
+
+/** `JsonDeck.ready`: resolves once the library is there, rejects if it could not load (already reported in the console, so not again as "unhandled"). */
+const ready = core.then(() => undefined)
+ready.catch(() => undefined)
+
+/** A mount / example call made through the loader: runs once the core is there. */
+function queued(run: (api: Api) => { issues: string[]; unmount: () => void }, el: Element | string): Handle {
+	let real: { unmount: () => void } | null = null
+	let cancelled = false
+	const issues: string[] = []
+	const ready = core.then(
+		(api) => {
+			if (cancelled) return
+			const m = run(api)
+			real = m
+			issues.push(...m.issues)
+		},
+		(err: unknown) => {
+			showError(el, err)
+			throw err
+		},
+	)
+	// The handle's own promise must not report an unhandled rejection twice (the console already has it).
+	ready.catch(() => undefined)
+	return {
+		issues,
+		ready,
+		unmount: () => {
+			cancelled = true
+			real?.unmount()
+		},
+	}
+}
+
+function notYet(name: string): never {
+	throw new Error(`JsonDeck.${name}: jsondeck is still loading. Call it after \`await JsonDeck.ready\` (or load jsondeck.full.js, which has everything at once).`)
+}
+
+/** Names the core adds when it arrives; reading one earlier throws the "still loading" error. */
+const LATER = ["describe", "htmlSnippet", "toSource", "humanize", "BUILTIN_FORMATS", "DEFAULT_GUESS", "DEFAULT_ACRONYMS", "DEFAULT_LABELS", "CLASS_SLOTS", "THEME_TOKENS", "TOKEN_NAMES"] as const
+
+const api: Record<string, unknown> = {
+	version,
+	setTheme,
+	pageTheme,
+	defineConfig,
+	mount: (el: Element | string, config: MountConfig): Handle => queued((a) => a.mount(el, config), el),
+	example: (el: Element | string, opts: ExampleOptions): Handle => queued((a) => a.example(el, opts), el),
+	ready,
+}
+for (const name of LATER) Object.defineProperty(api, name, { configurable: true, enumerable: true, get: () => notYet(name) })
+
+// Once the core is there, every name points at the real thing (mount / example keep returning handles with `ready`).
+core.then(
+	(real) => {
+		for (const [name, value] of Object.entries(real)) {
+			if (name === "version" || name === "ready") continue
+			Object.defineProperty(api, name, { configurable: true, enumerable: true, writable: true, value })
+		}
+	},
+	() => undefined,
+)
+
+export default api

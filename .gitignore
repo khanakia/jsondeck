@@ -4,7 +4,6 @@ dist-viz/
 dist/
 .DS_Store
 ._*
-dist-preact/
 .analyze/
 *.tgz
 .env.local

@@ -5,6 +5,7 @@
 // shared guards (no card shadows, no stray scrollbars, compact rows) in light
 // and dark.
 //   node scripts/verify-docs.mjs <url-of-docs/index.html> [<shot-prefix>]
+import { readFileSync } from "node:fs"
 import { chromium } from "playwright"
 import { shadowOffenders } from "./no-shadows.mjs"
 import { rowHeightOffenders } from "./row-heights.mjs"
@@ -15,7 +16,22 @@ const base = url.split("#")[0]
 /** Height of demo/nav.js's sticky bar; make-docs sets --jds-sticky-top to it. */
 const STICKY = 48
 const results = []
-const check = (name, ok, info = "") => results.push({ name, ok: !!ok, info })
+/** Rows in docs-content/features.json (read, not hard-coded, so adding a feature does not break this check). */
+const FEATURE_COUNT = JSON.parse(readFileSync(new URL("../docs-content/features.json", import.meta.url), "utf8")).length
+/**
+ * After a page load: wait until jsondeck has rendered and no on-demand part is
+ * still loading (no `[data-jd="pending"]` placeholder), so a click cannot land
+ * while a chart or tile above is still arriving and moves the layout.
+ */
+const settledLoad = async (pg) => {
+	await pg.waitForSelector('[data-jd="root"], [data-jd="example"]', { timeout: 15000 }).catch(() => undefined)
+	await pg.waitForFunction(() => !document.querySelector('[data-jd="pending"]'), null, { timeout: 15000 }).catch(() => undefined)
+}
+const check = (name, ok, info = "") => {
+	results.push({ name, ok: !!ok, info })
+	// VERIFY_TRACE=1 prints each check as it runs (find where a run stops).
+	if (process.env.VERIFY_TRACE) console.log(`  ${ok ? "ok" : "FAIL"}  ${name}`)
+}
 
 const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
@@ -24,6 +40,7 @@ page.on("pageerror", (e) => errors.push(String(e)))
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()))
 const open = async (hash) => {
 	await page.goto(`${base}${hash}`)
+	await settledLoad(page)
 	await page.waitForSelector('[data-jd="pages-nav"]')
 	await page.waitForTimeout(400)
 }
@@ -77,6 +94,7 @@ check("scroll-spy marks the visible heading", a.active === "look-and-feel", a.ac
 check("table of contents stays sticky under the bar", a.tocTop >= STICKY && a.tocTop <= STICKY + 20, String(Math.round(a.tocTop)))
 // Clicking a toc link moves the hash and the scroll.
 await page.goto(`${base}#/getting-started`)
+await settledLoad(page)
 await page.waitForTimeout(400)
 await page.locator('[data-jd-toc-link="the-smallest-page"]').click()
 await page.waitForTimeout(400)
@@ -87,7 +105,7 @@ check("sidebar stays sticky under the bar", sidebarTop >= STICKY && sidebarTop <
 
 // Search: "/" opens on a page without a table; a heading hit navigates to its anchor.
 await page.keyboard.press("/")
-await page.waitForTimeout(150)
+await page.locator('[data-jd="site-search"]').waitFor({ timeout: 5000 }).catch(() => undefined) // the search box is an on-demand chunk
 check('"/" opens search on a page without a table', await page.locator('[data-jd="site-search"]').isVisible())
 await page.keyboard.type("quick filters")
 await page.waitForTimeout(200)
@@ -99,7 +117,7 @@ const s1 = await page.evaluate(() => ({ hash: location.hash, top: document.getEl
 check("Enter on a heading hit opens that page at the heading", s1.hash === "#/filters-and-quick-filters/quick-filters" && !s1.open && s1.top >= STICKY - 2 && s1.top < 900, `${s1.hash} ${Math.round(s1.top)}`)
 // ⌘K / Ctrl+K anywhere; a row hit opens the row drawer on its page.
 await page.keyboard.press("Control+k")
-await page.waitForTimeout(150)
+await page.locator('[data-jd="site-search"]').waitFor({ timeout: 5000 }).catch(() => undefined)
 await page.keyboard.type("groupAggregates")
 await page.waitForTimeout(200)
 await page.screenshot({ path: `${prefix}-search-light.png` })
@@ -118,7 +136,7 @@ check("Esc closes search", (await page.locator('[data-jd="site-search"]').count(
 // Reference tables.
 await open("#/features")
 const f = await page.evaluate(() => ({ status: document.querySelector('[data-jd="status-bar"]')?.textContent ?? "", groups: document.querySelectorAll("[data-jd-group]").length, link: document.querySelector('a[href*="examples.html#ex-"]')?.getAttribute("href") ?? "" }))
-check("Features: all 125 rows, grouped by category, example links", f.status.includes("125") && f.groups >= 10 && f.link.startsWith("../demo/examples.html#ex-"), `${f.status.slice(0, 30)} groups=${f.groups} ${f.link}`)
+check(`Features: all ${FEATURE_COUNT} rows, grouped by category, example links`, f.status.includes(String(FEATURE_COUNT)) && f.groups >= 10 && f.link.startsWith("../demo/examples.html#ex-"), `${f.status.slice(0, 30)} groups=${f.groups} ${f.link}`)
 await page.screenshot({ path: `${prefix}-features-light.png` })
 const siteBar = await page.evaluate(() => [...document.querySelectorAll("nav[aria-label='jsondeck demos'] a")].filter((el) => el.style.fontWeight === "500").map((el) => el.textContent))
 check("site bar: Features is the active link on #/features", siteBar.includes("Features") && !siteBar.includes("Docs"), siteBar.join(","))
@@ -134,6 +152,7 @@ for (const scheme of ["light", "dark"]) {
 	const p = await browser.newPage({ viewport: { width: 1400, height: 900 }, colorScheme: scheme })
 	for (const h of ["#/overview", "#/getting-started", "#/features", "#/config"]) {
 		await p.goto(`${base}${h}`)
+		await settledLoad(p)
 		await p.waitForTimeout(600)
 		const sh = await shadowOffenders(p)
 		check(`no card shadows: ${h} (${scheme})`, sh.length === 0, sh.slice(0, 3).join(" | "))
@@ -144,9 +163,11 @@ for (const scheme of ["light", "dark"]) {
 	}
 	if (scheme === "dark") {
 		await p.goto(`${base}#/getting-started`)
+		await settledLoad(p)
 		await p.waitForTimeout(500)
 		await p.screenshot({ path: `${prefix}-guide-dark.png` })
 		await p.goto(`${base}#/overview`)
+		await settledLoad(p)
 		await p.waitForTimeout(500)
 		await p.screenshot({ path: `${prefix}-overview-dark.png` })
 	}

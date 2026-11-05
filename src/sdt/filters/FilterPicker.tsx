@@ -1,6 +1,7 @@
-import { CountBadge, ICON_BTN, LABEL_BTN, Tip, useToolbarLabels } from "../../components/Tip"
+import { Tip } from "../../components/Tip"
+import { FilterTrigger } from "../toolbar/triggers"
 import { opLabel, useLabels } from "@/lib/labels"
-import { ArrowLeft, ListFilter, Search } from "lucide-react"
+import { ArrowLeft, Search } from "lucide-react"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -71,7 +72,6 @@ export function FilterPicker<TWhere>({
 	activeCount,
 }: Props<TWhere>) {
 	const L = useLabels()
-	const withLabels = useToolbarLabels()
 	const isControlled = openProp !== undefined
 	const [internalOpen, setInternalOpen] = React.useState(false)
 	const open = isControlled ? openProp : internalOpen
@@ -146,11 +146,7 @@ export function FilterPicker<TWhere>({
 		<Popover open={open} onOpenChange={handleOpenChange}>
 			<Tip label={L.filter} hint="f">
 				<PopoverTrigger asChild>
-					<Button variant="ghost" size="sm" aria-label={L.filter} className={withLabels ? LABEL_BTN : ICON_BTN}>
-						<ListFilter className="jd:h-3.5 jd:w-3.5" />
-						{withLabels && L.filter}
-						<CountBadge n={activeCount ?? 0} />
-					</Button>
+					<FilterTrigger activeCount={activeCount ?? 0} />
 				</PopoverTrigger>
 			</Tip>
 			<PopoverContent align="start" className={cn("jd:p-0 jd:shadow-md", widthClass)}>

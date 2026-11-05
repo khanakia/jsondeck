@@ -1,8 +1,8 @@
-import { CountBadge, ICON_BTN, LABEL_BTN, Tip, useToolbarLabels } from "../../components/Tip"
+import { Tip } from "../../components/Tip"
+import { SortTrigger, sortTip } from "../toolbar/triggers"
 import { useLabels } from "@/lib/labels"
 import {
 	ArrowDown,
-	ArrowDownUp,
 	ArrowUp,
 	ChevronDown,
 	ChevronUp,
@@ -10,7 +10,6 @@ import {
 	X,
 } from "lucide-react"
 import * as React from "react"
-import { Button } from "@/components/ui/button"
 import {
 	Popover,
 	PopoverContent,
@@ -39,7 +38,6 @@ type Props = {
  */
 export function SortDropdown({ options, value, onChange }: Props) {
 	const L = useLabels()
-	const withLabels = useToolbarLabels()
 	const activeMap = React.useMemo(() => {
 		const m = new Map<string, { rule: SortRule; index: number }>()
 		value.forEach((rule, index) => {
@@ -50,16 +48,6 @@ export function SortDropdown({ options, value, onChange }: Props) {
 
 	const active = value
 	const available = options.filter((o) => !activeMap.has(o.fieldId))
-
-	const primary = active[0]
-	const primaryLabel = primary
-		? options.find((o) => o.fieldId === primary.fieldId)?.label
-		: undefined
-	const Icon = primary
-		? primary.direction === "asc"
-			? ArrowUp
-			: ArrowDown
-		: ArrowDownUp
 
 	const toggleDirection = (fieldId: string) => {
 		onChange(
@@ -128,13 +116,9 @@ export function SortDropdown({ options, value, onChange }: Props) {
 
 	return (
 		<Popover>
-			<Tip label={primary ? `${L.sort}: ${primaryLabel ?? primary.fieldId} ${primary.direction === "asc" ? "↑" : "↓"}` : L.sort} hint="s">
+			<Tip label={sortTip(L, options, value)} hint="s">
 				<PopoverTrigger asChild>
-					<Button variant="ghost" size="sm" aria-label={L.sort} data-jd-sort-trigger="true" className={withLabels ? LABEL_BTN : ICON_BTN}>
-						<Icon className="jd:h-3.5 jd:w-3.5" />
-						{withLabels && (primary ? `${primaryLabel ?? primary.fieldId} ${primary.direction === "asc" ? "↑" : "↓"}` : L.sort)}
-						<CountBadge n={active.length} />
-					</Button>
+					<SortTrigger options={options} value={value} />
 				</PopoverTrigger>
 			</Tip>
 			<PopoverContent

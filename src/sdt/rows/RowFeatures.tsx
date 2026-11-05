@@ -1,135 +1,21 @@
 /**
  * Row-level features of ClientDataTable, kept out of the main file:
- *  - RowDetail: the inline expanded panel (field grid, custom render, nested related tables)
+ *  - RowDetail is in RowDetail.tsx (an on-demand chunk, loaded when a row is first expanded)
  *  - QuickFilters: the one-row filter strip (range / chips / toggle / search), two-way with the pills
- *  - SelectionBar, GroupByMenu, MoreMenu: toolbar pieces
+ *  - SelectionBar (the group-by and "more" menus are in ToolbarMenus.tsx, an on-demand chunk)
  */
-import { ChevronRight, Copy, Layers, MoreHorizontal } from "lucide-react"
-import * as React from "react"
+import { Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useLabels } from "@/lib/labels"
-import { useNested } from "@/lib/nested"
 import { cn } from "@/lib/utils"
-import { buildAuto } from "../../auto"
-import { renderCell } from "../../components/cells"
-import { ICON_BTN, LABEL_BTN, Tip, useToolbarLabels } from "../../components/Tip"
-import { COPY_FORMATS, type CopyFormat } from "../../core/clipboard"
+import { COPY_FORMATS, type CopyFormat } from "../../core/copy"
 import type { Row } from "../../core/config"
 import { fill } from "../../core/labels"
-import { toText } from "../../core/query"
-import type { ResolvedColumn, ResolvedTable } from "../../core/resolve"
-import { ClientDataTable } from "../ClientDataTable"
+import type { ResolvedTable } from "../../core/resolve"
 import type { FilterCondition } from "../types"
 
-/** Nesting stops here (a guard against relation cycles). */
-export const MAX_DEPTH = 4
-/** Rows per page in a nested related table. */
-const NESTED_PAGE_SIZE = 10
-const FMT_KEY: Record<CopyFormat, "fmt_json" | "fmt_csv" | "fmt_tsv" | "fmt_markdown" | "fmt_text"> = {
-	json: "fmt_json",
-	csv: "fmt_csv",
-	tsv: "fmt_tsv",
-	markdown: "fmt_markdown",
-	text: "fmt_text",
-}
-export function formatLabel(L: ReturnType<typeof useLabels>, f: CopyFormat): string {
-	return L[FMT_KEY[f]]
-}
-
-/** A user renderer's result as a node (text, DOM Node or React element). */
-function asNode(out: unknown): React.ReactNode {
-	if (out === null || out === undefined || out === false) return null
-	if (React.isValidElement(out)) return out
-	if (typeof Node !== "undefined" && out instanceof Node) {
-		return <span ref={(el) => el?.replaceChildren(out)} />
-	}
-	return String(out)
-}
-
-const GRID_COLS: Record<number, string> = {
-	1: "jd:grid-cols-1",
-	2: "jd:grid-cols-2",
-	3: "jd:grid-cols-3",
-	4: "jd:grid-cols-4",
-}
-
-/** Expanded row: field grid (+ custom render) and, when asked, nested tables of related rows. */
-export function RowDetail({
-	row,
-	table,
-	fields,
-	depth,
-	parentId,
-	onlyRelation,
-	className,
-}: {
-	row: Row
-	table: ResolvedTable
-	fields: ResolvedColumn[]
-	depth: number
-	parentId: string
-	/** Show only this relation's rows (expand: { relation }) instead of the field grid. */
-	onlyRelation?: string | undefined
-	/** User class slot `detailPanel`. */
-	className?: string | undefined
-}) {
-	const L = useLabels()
-	const nested = useNested()
-	const d = table.detail
-	const cols = GRID_COLS[d?.columns ?? 3] ?? GRID_COLS[3]
-	const groups = nested && (d?.related || onlyRelation) && depth < MAX_DEPTH ? nested.relIndex.lookup(table.name, row).filter((g) => g.rows.length > 0 && (!onlyRelation || g.label === onlyRelation)) : []
-	const keyText = table.key ? toText(row[table.key]) : toText(row[table.columns[0]?.id ?? ""])
-	return (
-		// Indented past the chevron column, on the muted inner surface with a left accent, so it reads as belonging to the row above.
-		<div className={cn("jd:my-1 jd:ml-8 jd:mr-2 jd:flex jd:flex-col jd:gap-3 jd:rounded-r-md jd:border-l-2 jd:border-primary/30 jd:bg-muted/50 jd:py-2.5 jd:pl-3 jd:pr-3", className)} data-jd="row-detail" data-jd-depth={depth}>
-			{!onlyRelation && fields.length > 0 && (
-				<dl className={cn("jd:grid jd:gap-x-4 jd:gap-y-1.5 jd:max-md:grid-cols-1", cols)}>
-					{fields.map((c) => (
-						<div key={c.id} className="jd:min-w-0" data-jd-detail-field={c.id}>
-							<dt className="jd:text-muted-foreground jd:text-[10px] jd:font-semibold jd:uppercase jd:tracking-wider">{c.label}</dt>
-							<dd className="jd:flex jd:min-w-0 jd:items-center jd:whitespace-normal jd:break-words jd:text-[13px]">{renderCell(row[c.id], row, { ...c, wrap: true }, nested?.renderCtx ?? { types: {}, renderers: {}, formats: {} })}</dd>
-						</div>
-					))}
-				</dl>
-			)}
-			{d?.render && <div data-jd="detail-render">{asNode(d.render(row, row))}</div>}
-			{groups.map((g) => {
-				const target = nested?.deck.tables.find((t) => t.name === g.table)
-				if (!target || !nested) return null
-				// The nested table: the related rows, compact, its own sort/search/expand, one level deeper.
-				const sub: ResolvedTable = {
-					...target,
-					rows: g.rows,
-					pageSize: NESTED_PAGE_SIZE,
-					views: false,
-					quickFilters: [],
-					selectable: false,
-					expand: target.detail?.related || depth + 1 < MAX_DEPTH - 1 ? "inline" : target.expand,
-					detail: { ...(target.detail ?? {}), related: true },
-					defaultFilters: [],
-				}
-				const auto = buildAuto(sub, nested.renderCtx)
-				return (
-					<div key={`${g.direction}:${g.relation.from}:${g.relation.to}`} className="jd:flex jd:flex-col jd:gap-1" data-jd="nested" data-jd-nested-table={g.table}>
-						<div className="jd:flex jd:items-center jd:gap-1 jd:text-[12px]" data-jd="breadcrumb">
-							<span className="jd:text-muted-foreground">{table.label}</span>
-							<span className="jd:font-medium">{keyText}</span>
-							<ChevronRight className="jd:text-muted-foreground jd:h-3 jd:w-3" />
-							<span className="jd:font-medium">{g.label}</span>
-							<span className="jd:bg-tab-badge jd:inline-flex jd:h-4 jd:min-w-4 jd:items-center jd:justify-center jd:rounded-full jd:px-1 jd:text-[10px] jd:tabular-nums">{g.rows.length}</span>
-						</div>
-						{/* Its own card with its own header row, so it never lines up with the parent's columns. */}
-						<div className="jd:border-card-border jd:bg-card jd:rounded-lg jd:border jd:p-2 jd:shadow-(--jds-card-shadow)">
-							<ClientDataTable table={sub} auto={auto} instanceId={`${parentId}>${g.table}:${keyText}`} depth={depth + 1} compact active={false} />
-						</div>
-					</div>
-				)
-			})}
-			{groups.length === 0 && (d?.related || onlyRelation) && fields.length === 0 && <div className="jd:text-muted-foreground jd:text-[12px]">{L.noRelated}</div>}
-		</div>
-	)
-}
+import { formatLabel } from "./row-shared"
 
 // ── Quick filters ───────────────────────────────────────────────────────
 
@@ -287,71 +173,5 @@ export function SelectionBar({ count, total, onSelectAll, onCopy, onClear }: { c
 				{L.clearSelection}
 			</Button>
 		</div>
-	)
-}
-
-export function GroupByMenu({ columns, value, onChange }: { columns: ResolvedColumn[]; value: string[]; onChange: (v: string[]) => void }) {
-	const L = useLabels()
-	const withLabels = useToolbarLabels()
-	const candidates = columns.filter((c) => c.type === "enum" || c.type === "boolean" || c.type === "text" || c.type === "mono" || c.type === "date")
-	return (
-		<DropdownMenu>
-			<Tip label={value.length ? `${L.groupBy}: ${value.join(", ")}` : L.groupBy}>
-				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="sm" aria-label={L.groupBy} data-jd="group-by" className={withLabels ? LABEL_BTN : ICON_BTN}>
-						<Layers className={cn("jd:h-3.5 jd:w-3.5", value.length > 0 && "jd:text-foreground")} />
-						{withLabels && L.groupBy}
-						{value.length > 0 && <span className="jd:bg-primary jd:absolute jd:right-0.5 jd:top-0.5 jd:h-1.5 jd:w-1.5 jd:rounded-full" />}
-					</Button>
-				</DropdownMenuTrigger>
-			</Tip>
-			<DropdownMenuContent align="end" className="jd:min-w-44 jd:p-0.5">
-				<DropdownMenuGroup>
-					<DropdownMenuItem className="jd:h-7 jd:px-2 jd:text-xs" onClick={() => onChange([])}>
-						{L.noGrouping}
-					</DropdownMenuItem>
-					{candidates.map((c) => {
-						const i = value.indexOf(c.id)
-						return (
-							<DropdownMenuItem
-								key={c.id}
-								closeOnClick={false}
-								data-jd-group-option={c.id}
-								className="jd:h-7 jd:gap-1.5 jd:px-2 jd:text-xs"
-								onClick={() => onChange(i >= 0 ? value.filter((v) => v !== c.id) : [...value, c.id])}
-							>
-								<span className="jd:inline-flex jd:w-3.5 jd:justify-center jd:text-[10px] jd:tabular-nums">{i >= 0 ? i + 1 : ""}</span>
-								{c.label}
-							</DropdownMenuItem>
-						)
-					})}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
-	)
-}
-
-export function MoreMenu({ items }: { items: { label: string; onSelect: () => void; id: string }[] }) {
-	const L = useLabels()
-	if (items.length === 0) return null
-	return (
-		<DropdownMenu>
-			<Tip label={L.more}>
-				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="sm" aria-label={L.more} data-jd="more-menu" className={ICON_BTN}>
-						<MoreHorizontal className="jd:h-3.5 jd:w-3.5" />
-					</Button>
-				</DropdownMenuTrigger>
-			</Tip>
-			<DropdownMenuContent align="end" className="jd:min-w-40 jd:p-0.5">
-				<DropdownMenuGroup>
-					{items.map((it) => (
-						<DropdownMenuItem key={it.id} data-jd-more={it.id} className="jd:h-7 jd:px-2 jd:text-xs" onClick={it.onSelect}>
-							{it.label}
-						</DropdownMenuItem>
-					))}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
 	)
 }

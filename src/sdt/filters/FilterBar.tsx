@@ -1,8 +1,7 @@
 import { useLabels } from "@/lib/labels"
 import { Button } from "@/components/ui/button"
 import type { FilterCondition, FilterFieldDef, SearchConfig } from "../types"
-import { FilterPicker } from "./FilterPicker"
-import { FilterPill } from "./FilterPill"
+import { FilterPicker, FilterPill } from "../toolbar/controls"
 import { SearchInput } from "./SearchInput"
 
 type Props<TWhere> = {

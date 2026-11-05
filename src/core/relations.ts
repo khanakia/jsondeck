@@ -9,7 +9,7 @@
  * The index is built once (O(total rows)); each lookup is a few Map reads,
  * so a detail drawer can ask on every row click even at ~50k rows.
  */
-import { getField, type Row } from "./aggregate"
+import { getField, type Row } from "./field"
 import { toText } from "./query"
 
 export type Relation = {

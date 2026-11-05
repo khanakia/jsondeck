@@ -1,7 +1,5 @@
-import { useLabels } from "@/lib/labels"
-import { fill } from "../../core/labels"
-import { Check, ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Check } from "lucide-react"
+import { PageSizeTrigger } from "../toolbar/triggers"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -22,19 +20,10 @@ type Props = {
  * Changing the value resets pagination to page 1 (handled by the reducer).
  */
 export function PageSizeSelect({ value, options, onChange }: Props) {
-	const L = useLabels()
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button
-					variant="ghost"
-					size="sm"
-					className="jd:text-muted-foreground jd:hover:text-foreground jd:h-6 jd:gap-1 jd:px-1.5 jd:text-[11px] jd:tabular-nums"
-					aria-label="Rows per page"
-				>
-					{fill(L.perPage, { n: value })}
-					<ChevronDown className="jd:h-2.5 jd:w-2.5 jd:opacity-60" />
-				</Button>
+				<PageSizeTrigger value={value} />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="jd:min-w-0 jd:p-0.5">
 				<DropdownMenuGroup>

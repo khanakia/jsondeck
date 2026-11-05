@@ -4,7 +4,7 @@
  * the page "bus" that lets charts and facets filter tables. It renders a list
  * of placed components; the no-`pages` default is one page with a tab per table.
  */
-import { Check, Copy, LayoutGrid, Moon, RotateCcw, Search, Sun, TriangleAlert } from "lucide-react"
+import { LayoutGrid, Moon, Search, Sun } from "lucide-react"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { LabelsContext } from "@/lib/labels"
@@ -12,23 +12,27 @@ import { ClassNamesContext } from "@/lib/classnames"
 import { NestedContext } from "@/lib/nested"
 import { tokenStyle } from "../core/theme-tokens"
 import { PortalContainerContext } from "@/lib/portal"
+import { deferred, preload } from "@/components/ui/deferred"
 import { setTheme, usePageTheme, useSystemTheme } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 import type { PageConfig, PageItem, Row } from "../core/config"
-import { fill } from "../core/labels"
-import { addItem, moveItem, plainPage, type ResolvedSection, removeItem, resolvePage, restorePage, slug, updateItem, withItemIds } from "../core/layout"
+import { plainPage, type ResolvedSection, resolvePage, restorePage, slug, withItemIds } from "../core/layout"
 import { buildRelations } from "../core/relations"
-import { buildSearchIndex, type SearchHit } from "../core/search"
+import type { SearchHit } from "../core/search"
 import type { ResolvedDeck } from "../core/resolve"
-import { formatIssue, type Issue } from "../core/validate"
+import type { Issue } from "../core/validate"
 import type { TableApi } from "../sdt/ClientDataTable"
 import type { RenderCtx } from "./cells"
 import { PageContext, type PageCtx } from "./Items"
 import { SegmentedTabs } from "./Tabs"
 import { ICON_BTN, LABEL_BTN, Tip, ToolbarLabelsContext } from "./Tip"
 import { type LayoutOps, PageView } from "./Page"
-import { type DrawerTarget, RowDrawer } from "./RowDrawer"
-import { SearchDialog } from "./SearchDialog"
+import { DeckEditTools, IssuesBox, OnDemand, preloadSearchWhenIdle, RowDrawer, SearchDialog } from "./lazy"
+import type { DrawerTarget } from "./RowDrawer"
+import type { SearchSource } from "./SearchDialog"
+
+/** Layout edit functions (core/layout-edit.ts), an on-demand chunk shared with the editor tools; loaded when edit mode is switched on. */
+const layoutEdits = deferred(() => import("../core/layout-edit"))
 
 const LAYOUT_KEY = (pageId: string) => `jsondeck:layout:${pageId}`
 
@@ -48,23 +52,6 @@ function storageSet(key: string, value: unknown | null): void {
 	} catch {
 		// Storage unavailable: the edit still applies for this session.
 	}
-}
-
-function IssuesBox({ issues, label }: { issues: Issue[]; label: string }) {
-	if (issues.length === 0) return null
-	return (
-		<details open className="jd:rounded-md jd:border jd:border-amber-300 jd:bg-amber-50 jd:px-2 jd:py-1 jd:text-[12px] jd:text-amber-900 jd:dark:border-amber-800 jd:dark:bg-amber-950 jd:dark:text-amber-200" data-jd="issues">
-			<summary className="jd:flex jd:cursor-pointer jd:items-center jd:gap-1.5 jd:font-medium">
-				<TriangleAlert className="jd:h-3.5 jd:w-3.5" />
-				{fill(label, { n: issues.length })}
-			</summary>
-			<ul className="jd:mt-1 jd:flex jd:flex-col jd:gap-0.5 jd:pl-5 jd:font-mono jd:text-[11px]">
-				{issues.map((i) => (
-					<li key={`${i.path}|${i.message}`}>{formatIssue(i)}</li>
-				))}
-			</ul>
-		</details>
-	)
 }
 
 /** `#/<page>` or `#/<page>/<heading anchor>` → { page, anchor }. */
@@ -156,15 +143,20 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 		},
 		[pageIndex, ids.join("|")],
 	)
-	const ops = React.useMemo<LayoutOps>(
-		() => ({
-			move: (id, path, index) => applyEdit((p) => moveItem(p, id, path, index)),
-			update: (id, patch) => applyEdit((p) => updateItem(p, id, patch)),
-			remove: (id) => applyEdit((p) => removeItem(p, id)),
-			add: (path, item: PageItem) => applyEdit((p) => addItem(p, path, item)),
-		}),
-		[applyEdit],
-	)
+	const edits = layoutEdits.use()
+	React.useEffect(() => {
+		if (edit) preload(layoutEdits)
+	}, [edit])
+	const ops = React.useMemo<LayoutOps>(() => {
+		// Loaded when edit mode turns on, so in practice an edit applies at once; a very early one waits for the chunk.
+		const withEdits = (fn: (e: NonNullable<typeof edits>) => void) => (edits ? fn(edits) : void layoutEdits.load().then(fn, () => undefined))
+		return {
+			move: (id, path, index) => withEdits((e) => applyEdit((p) => e.moveItem(p, id, path, index))),
+			update: (id, patch) => withEdits((e) => applyEdit((p) => e.updateItem(p, id, patch))),
+			remove: (id) => withEdits((e) => applyEdit((p) => e.removeItem(p, id))),
+			add: (path, item: PageItem) => withEdits((e) => applyEdit((p) => e.addItem(p, path, item))),
+		}
+	}, [applyEdit, edits])
 	const resetLayout = () => {
 		storageSet(LAYOUT_KEY(ids[pageIndex] ?? ""), null)
 		setPageCfgs((all) => all.map((p, i) => (i === pageIndex ? (originals[i] ?? p) : p)))
@@ -288,24 +280,24 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 			}
 		: null
 	const sidebar = deck.config.nav === "sidebar" && ids.length > 1
+	const allIssues = [...deck.issues, ...layoutIssues, ...resolved.issues.filter((i) => !layoutIssues.some((l) => l.path === i.path && l.message === i.message))]
 	const showHeader = (ids.length > 1 && !sidebar) || editable
 
 	// Site search (⌘K / Ctrl+K anywhere; "/" on a page without a table, where "/" is free).
 	const searchOn = deck.config.search ?? deck.config.nav === "sidebar"
 	const [searchOpen, setSearchOpen] = React.useState(false)
-	const searchEntries = React.useMemo(
-		() =>
-			searchOn
-				? buildSearchIndex(
-						pageCfgs.map((config, i) => ({ id: ids[i] ?? "", config, title: resolved.pages[i]?.title ?? config.title })),
-						(table) => deck.datasets[table] ?? [],
-						(table, row) => {
-							const cols = deck.tables.find((t) => t.name === table)?.columns.filter((c) => !c.hidden).slice(0, 2) ?? []
-							return cols.map((c) => String(row[c.id] ?? "")).filter(Boolean).join(" · ")
-						},
-					)
-				: [],
-		[searchOn, pageCfgs, resolved, deck, ids.join("|")],
+	React.useEffect(() => (searchOn ? preloadSearchWhenIdle() : undefined), [searchOn])
+	// What the search index is built from; SearchDialog (an on-demand chunk with core/search) builds it on first open.
+	const searchSource = React.useMemo<SearchSource>(
+		() => ({
+			pages: pageCfgs.map((config, i) => ({ id: ids[i] ?? "", config, title: resolved.pages[i]?.title ?? config.title })),
+			rows: (table) => deck.datasets[table] ?? [],
+			rowLabel: (table, row) => {
+				const cols = deck.tables.find((t) => t.name === table)?.columns.filter((c) => !c.hidden).slice(0, 2) ?? []
+				return cols.map((c) => String(row[c.id] ?? "")).filter(Boolean).join(" · ")
+			},
+		}),
+		[pageCfgs, resolved, deck, ids.join("|")],
 	)
 	const hasTable = firstTableId !== null
 	React.useEffect(() => {
@@ -407,27 +399,20 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 				<ToolbarLabelsContext.Provider value={withLabels}>
 				<PortalContainerContext.Provider value={portal}>
 					<div className="jd:flex jd:flex-col jd:gap-2 jd:p-2">
-						<IssuesBox issues={[...deck.issues, ...layoutIssues, ...resolved.issues.filter((i) => !layoutIssues.some((l) => l.path === i.path && l.message === i.message))]} label={L.configIssues} />
+						{allIssues.length > 0 && (
+							<OnDemand>
+								<IssuesBox issues={allIssues} label={L.configIssues} />
+							</OnDemand>
+						)}
 						{showHeader && (
 							<div className="jd:flex jd:items-center jd:gap-2 jd:pb-0.5" data-jd="deck-header">
 								{!sidebar && ids.length > 1 ? nav : <span className="jd:text-[13px] jd:font-semibold">{page?.title}</span>}
 								{!sidebar && searchButton && <div className="jd:w-48">{searchButton}</div>}
 								<span className="jd:flex-1" />
 								{editable && edit && (
-									<>
-										<Tip label={copied ? L.copied : L.copyConfig}>
-											<Button variant="ghost" size="sm" aria-label={L.copyConfig} className={withLabels ? LABEL_BTN : ICON_BTN} data-jd="copy-config" onClick={copyConfig}>
-												{copied ? <Check className="jd:h-3.5 jd:w-3.5" /> : <Copy className="jd:h-3.5 jd:w-3.5" />}
-												{withLabels && (copied ? L.copied : L.copyConfig)}
-											</Button>
-										</Tip>
-										<Tip label={L.resetLayout}>
-											<Button variant="ghost" size="sm" aria-label={L.resetLayout} className={withLabels ? LABEL_BTN : ICON_BTN} data-jd="reset-layout" onClick={resetLayout}>
-												<RotateCcw className="jd:h-3.5 jd:w-3.5" />
-												{withLabels && L.resetLayout}
-											</Button>
-										</Tip>
-									</>
+									<OnDemand>
+										<DeckEditTools copied={copied !== null} onCopy={copyConfig} onReset={resetLayout} />
+									</OnDemand>
 								)}
 								{editable && (
 									<Tip label={edit ? L.done : L.edit}>
@@ -478,8 +463,16 @@ export function Deck({ deck, configs, layoutIssues }: { deck: ResolvedDeck; conf
 							</div>
 						</div>
 					</div>
-					{searchOpen && <SearchDialog entries={searchEntries} onPick={pickHit} onClose={() => setSearchOpen(false)} />}
-					{drawer && <RowDrawer deck={deck} index={relIndex} target={drawer} ctx={renderCtx} onOpen={setDrawer} onClose={() => setDrawer(null)} />}
+					{searchOpen && (
+						<OnDemand>
+							<SearchDialog source={searchSource} onPick={pickHit} onClose={() => setSearchOpen(false)} />
+						</OnDemand>
+					)}
+					{drawer && (
+						<OnDemand>
+							<RowDrawer deck={deck} index={relIndex} target={drawer} ctx={renderCtx} onOpen={setDrawer} onClose={() => setDrawer(null)} />
+						</OnDemand>
+					)}
 					<div ref={setPortal} data-jd="portal" />
 				</PortalContainerContext.Provider>
 				</ToolbarLabelsContext.Provider>

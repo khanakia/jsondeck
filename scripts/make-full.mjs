@@ -1,18 +1,18 @@
-// Builds dist/jsondeck.full.js: the IIFE (dist/jsondeck.js) with dist/jsondeck.css
-// embedded, so one <script src> tag is enough. The CSS is injected once, as
+// Finishes dist/jsondeck.full.js: the single-file IIFE (vite.full.config.ts) with
+// dist/jsondeck.css embedded, so one <script src> tag is enough. The CSS is injected once, as
 // <style data-jsondeck> in <head>, and skipped when the page already links
 // jsondeck.css or a copy was injected before (the script loaded twice).
 //
 // The injector is APPENDED after the IIFE rather than prepended, so every line
-// and column of jsondeck.js stays where it was and its source map is reused
+// and column of the built file stays where it was and its source map is reused
 // as-is (only the "file" field changes). It still runs before any later
 // <script> on the page, because a classic script runs to the end in one go.
 import { readFileSync, writeFileSync } from "node:fs"
 
 const DIR = new URL("../dist/", import.meta.url)
-const js = readFileSync(new URL("jsondeck.js", DIR), "utf8").replace(/\n\/\/# sourceMappingURL=.*\s*$/, "\n")
+const js = readFileSync(new URL("jsondeck.full.js", DIR), "utf8").replace(/\n\/\/# sourceMappingURL=.*\s*$/, "\n")
 const css = readFileSync(new URL("jsondeck.css", DIR), "utf8")
-const map = JSON.parse(readFileSync(new URL("jsondeck.js.map", DIR), "utf8"))
+const map = JSON.parse(readFileSync(new URL("jsondeck.full.js.map", DIR), "utf8"))
 
 // "<" escaped so the file can also be pasted inline into a <script> block.
 const cssLiteral = JSON.stringify(css).replace(/</g, "\\u003c")

@@ -7,30 +7,27 @@ import { fill, plural } from "../core/labels"
 import type { ResolvedTable } from "../core/resolve"
 import { orderColumns, pageSlice, visibleColumns as dropHidden } from "../core/columns"
 import { applyQuery, type Row } from "../core/query"
-import { ColumnHeaderMenu } from "./columns/ColumnHeaderMenu"
-import { ColumnVisibilityMenu } from "./columns/ColumnVisibilityMenu"
 import { useColumnResize } from "./columns/useColumnResize"
 import { FilterBar } from "./filters/FilterBar"
-import { ShortcutsHelp } from "./keyboard/ShortcutsHelp"
 import { useShortcuts } from "./keyboard/useShortcuts"
 import { NumberedPaginationBar } from "./pagination/NumberedPaginationBar"
-import { PageSizeSelect } from "./pagination/PageSizeSelect"
-import { SortDropdown } from "./sort/SortDropdown"
 import { initialTableState } from "./state/reducer"
 import { useTableState } from "./state/useTableState"
 import { EmptyState } from "./table/EmptyState"
-import { TableExportButton } from "./toolbar/TableExportButton"
+import { ColumnHeaderMenu, ColumnVisibilityMenu, GroupByMenu, MoreMenu, PageSizeSelect, ShortcutsHelp, SortDropdown, TableExportButton } from "./toolbar/controls"
 import type { CsvField } from "./toolbar/csv"
 import { ChevronRight } from "lucide-react"
 import { mergeClassNames, useClassNames } from "@/lib/classnames"
 import { useNested } from "@/lib/nested"
 import { fillTemplate, formatValue } from "../components/cells"
-import { ContextMenu, type MenuItem } from "../components/ContextMenu"
+import type { MenuItem } from "../components/ContextMenu"
+import { ContextMenu, OnDemand, QuickFilters, RowDetail, SelectionBar } from "../components/lazy"
 import { toast } from "../components/Toast"
-import { cellText, COPY_FORMATS, type CopyFormat, copyText, serializeRows } from "../core/clipboard"
-import { flattenGroups, type GroupNode, groupRows } from "../core/group"
+import { COPY_FORMATS, type CopyFormat, copyText } from "../core/copy"
+import type { GroupNode } from "../core/group"
+import { deferred, preload } from "@/components/ui/deferred"
 import { toText } from "../core/query"
-import { formatLabel, GroupByMenu, MAX_DEPTH, MoreMenu, QuickFilters, RowDetail, SelectionBar } from "./rows/RowFeatures"
+import { formatLabel, MAX_DEPTH } from "./rows/row-shared"
 import type { DataTableColumn, FilterCondition, SortRule, ToolbarCtx } from "./types"
 
 /**
@@ -61,11 +58,20 @@ function csvValue(v: unknown): string | number | boolean | null | undefined {
 	return JSON.stringify(v)
 }
 
+/**
+ * Row grouping (core/group.ts with the aggregates), an on-demand chunk loaded
+ * when a table is first grouped; until it arrives the rows show ungrouped.
+ */
+const grouping = deferred(() => import("../core/group"))
+
+/** The row serializers (core/clipboard.ts), an on-demand chunk; the browser caches the module after the first call. */
+const loadClipboard = () => import("../core/clipboard")
+
 /** Ids for filters added from the page (charts, facets). */
 let filterSeq = 0
 import type { ViewStorage } from "./views/storage/ViewStorage"
 import { useSavedViews } from "./views/useSavedViews"
-import { ViewSelector } from "./views/ViewSelector"
+import { ViewSelector } from "./toolbar/controls"
 
 const DEFAULT_COL_SIZE = 160
 
@@ -185,8 +191,14 @@ export function ClientDataTable(props: ClientDataTableProps) {
 	const totalCount = filtered.length
 	// Grouping: group header entries interleaved with rows (collapsed groups hide their rows); paged as one list.
 	const [collapsed, setCollapsed] = React.useState<ReadonlySet<string>>(new Set())
+	const groupMod = grouping.use()
+	const grouped = state.groupBy.length > 0
+	React.useEffect(() => {
+		if (grouped) preload(grouping)
+	}, [grouped])
 	const entries = React.useMemo<Entry[]>(() => {
-		if (state.groupBy.length === 0) return filtered.map((row) => ({ kind: "row", row }))
+		if (!grouped || !groupMod) return filtered.map((row) => ({ kind: "row", row }))
+		const { groupRows, flattenGroups } = groupMod
 		const order: Record<string, string[]> = {}
 		for (const g of state.groupBy) {
 			const o = table.columns.find((c) => c.id === g)?.order
@@ -199,7 +211,7 @@ export function ClientDataTable(props: ClientDataTableProps) {
 			if (node.rows && !collapsed.has(path)) for (const row of node.rows) out.push({ kind: "row", row })
 		}
 		return out
-	}, [filtered, state.groupBy, collapsed, table.columns, table.groupAggregates])
+	}, [filtered, state.groupBy, grouped, groupMod, collapsed, table.columns, table.groupAggregates])
 	const { rows: pageEntries, page, pageCount } = React.useMemo(
 		() => pageSlice(entries, state.pagination.page, state.pageSize),
 		[entries, state.pagination.page, state.pageSize],
@@ -255,17 +267,26 @@ export function ClientDataTable(props: ClientDataTableProps) {
 	}, [state.detailColumns, state.hiddenColumns, table.columns, table.detail])
 	const detailFields = React.useMemo(() => detailIds.flatMap((id) => table.columns.filter((c) => c.id === id)), [detailIds, table.columns])
 
-	// Copy (context menu / selection bar), with a toast on every copy.
+	// Copy (context menu / selection bar), with a toast on every copy. The serializers are an
+	// on-demand chunk, preloaded when the menu opens or rows get selected, so by the time a
+	// format is picked the import resolves at once and the copy still runs in the user's click.
 	const copyRows = async (list: Row[], fmt: CopyFormat) => {
+		const { serializeRows } = await loadClipboard()
 		const ok = await copyText(serializeRows(fmt, list, table.columns))
 		toast(ok ? fill(plural(L, list.length, "copiedRows", "copiedRowsOne"), { n: list.length, fmt: formatLabel(L, fmt) }) : L.copyFailed, { kind: ok ? "success" : "error" })
 	}
 	const [menu, setMenu] = React.useState<{ x: number; y: number; row: Row; col?: string | undefined } | null>(null)
+	// Preload the serializers as soon as a copy is possible (menu open, rows selected).
+	const copyPossible = menu !== null || selection.size > 0
+	React.useEffect(() => {
+		if (copyPossible) loadClipboard().catch(() => undefined)
+	}, [copyPossible])
 	const menuItems = (row: Row, colId: string | undefined): MenuItem[] => {
 		const items: MenuItem[] = []
 		const spec = colId ? table.columns.find((c) => c.id === colId) : undefined
 		if (spec) {
 			items.push({ label: L.copyCell, onSelect: async () => {
+				const { cellText } = await loadClipboard()
 				const ok = await copyText(cellText(row, spec))
 				toast(ok ? L.copiedCell : L.copyFailed, { kind: ok ? "success" : "error" })
 			} })
@@ -543,6 +564,8 @@ export function ClientDataTable(props: ClientDataTableProps) {
 			</div>
 
 			{/* Table: scrolls inside its own box (both axes), never the page. */}
+			{table.quickFilters.length > 0 && (
+			<OnDemand>
 			<QuickFilters
 				table={table}
 				conditions={state.filters}
@@ -556,6 +579,8 @@ export function ClientDataTable(props: ClientDataTableProps) {
 					else actions.addFilter({ ...cond, id: `qf:${column}` })
 				}}
 			/>
+			</OnDemand>
+			)}
 			{restrictLabel && onClearRestrict && (
 				<div className="jd:flex jd:items-center">
 					<span className="jd:border-card-border jd:bg-muted/60 jd:inline-flex jd:h-6 jd:items-center jd:gap-1 jd:rounded-md jd:border jd:px-2 jd:text-[12px]" data-jd="master-chip">
@@ -566,7 +591,11 @@ export function ClientDataTable(props: ClientDataTableProps) {
 					</span>
 				</div>
 			)}
-			<SelectionBar count={checkboxes ? selection.size : 0} total={totalCount} onSelectAll={() => setSelection(new Set(filtered))} onCopy={(f) => void copyRows([...selection], f)} onClear={() => setSelection(new Set())} />
+			{checkboxes && selection.size > 0 && (
+				<OnDemand>
+					<SelectionBar count={selection.size} total={totalCount} onSelectAll={() => setSelection(new Set(filtered))} onCopy={(f) => void copyRows([...selection], f)} onClear={() => setSelection(new Set())} />
+				</OnDemand>
+			)}
 			<div data-jd="table-scroll" className={cn("jd:@container jd:bg-background jd:rounded-md jd:border", compact ? "jd:overflow-x-auto jd:overflow-y-hidden" : "jd:max-h-[70vh] jd:overflow-auto")}>
 				<Table
 					data-jd="table"
@@ -842,7 +871,9 @@ export function ClientDataTable(props: ClientDataTableProps) {
 											<TableRow className="jd:hover:bg-transparent jd:border-b" data-jd="detail-row">
 												<TableCell colSpan={specialCols + visibleColumns.length} className="jd:p-0">
 													<div className="jd:sticky jd:left-0 jd:w-[100cqw] jd:max-w-full">
-														<RowDetail row={row} table={table} fields={detailFields} depth={depth} parentId={scope} onlyRelation={table.expandRelation} className={cls_.detailPanel} />
+														<OnDemand>
+															<RowDetail row={row} table={table} fields={detailFields} depth={depth} parentId={scope} onlyRelation={table.expandRelation} className={cls_.detailPanel} />
+														</OnDemand>
 													</div>
 												</TableCell>
 											</TableRow>
@@ -885,7 +916,11 @@ export function ClientDataTable(props: ClientDataTableProps) {
 			)}
 
 			<ShortcutsHelp open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
-			{menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.row, menu.col)} onClose={() => setMenu(null)} label={table.label} />}
+			{menu && (
+				<OnDemand>
+					<ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.row, menu.col)} onClose={() => setMenu(null)} label={table.label} />
+				</OnDemand>
+			)}
 		</div>
 	)
 }

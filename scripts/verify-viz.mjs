@@ -8,7 +8,11 @@ const errors = []
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()))
 page.on("pageerror", (e) => errors.push(String(e)))
 const results = []
-const check = (name, ok, info = "") => results.push({ name, ok: !!ok, info })
+const check = (name, ok, info = "") => {
+	results.push({ name, ok: !!ok, info })
+	// VERIFY_TRACE=1 prints each check as it runs (find where a run stops).
+	if (process.env.VERIFY_TRACE) console.log(`  ${ok ? "ok" : "FAIL"}  ${name}`)
+}
 const chart = (i) => page.locator(`[data-chart-index="${i}"]`)
 const marks = (i) => chart(i).locator("path.jdv-mark").count()
 

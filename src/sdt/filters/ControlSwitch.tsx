@@ -1,7 +1,6 @@
 import type { DateRangeValue, FilterFieldDef, FilterOperator } from "../types"
 import { BooleanControl } from "./controls/BooleanControl"
-import { DateControl } from "./controls/DateControl"
-import { DateRangeControl } from "./controls/DateRangeControl"
+import { DateControl, DateRangeControl, OnDemand } from "../../components/lazy"
 import { MultiSelectControl } from "./controls/MultiSelectControl"
 import { NumberControl } from "./controls/NumberControl"
 import { NumberRangeControl } from "./controls/NumberRangeControl"
@@ -159,32 +158,38 @@ export function ControlSwitch<TWhere>({
 			)
 		case "date":
 			return (
-				<DateControl
-					operator={operator}
-					value={value as string | undefined}
-					onChange={(v) => onChange(v)}
-					onCommit={(v) => onCommit(v)}
-				/>
+				<OnDemand>
+					<DateControl
+						operator={operator}
+						value={value as string | undefined}
+						onChange={(v) => onChange(v)}
+						onCommit={(v) => onCommit(v)}
+					/>
+				</OnDemand>
 			)
 		case "date-range":
 			// Before / after one day uses the single-date picker.
 			if (operator === "lt" || operator === "gt")
 				return (
-					<DateControl
-						operator={operator}
-						value={typeof value === "string" ? value : undefined}
-						onChange={(v) => onChange(v)}
-						onCommit={(v) => onCommit(v)}
-					/>
+					<OnDemand>
+						<DateControl
+							operator={operator}
+							value={typeof value === "string" ? value : undefined}
+							onChange={(v) => onChange(v)}
+							onCommit={(v) => onCommit(v)}
+						/>
+					</OnDemand>
 				)
 			return (
-				<DateRangeControl
-					operator={operator}
-					value={value as DateRangeValue | undefined}
-					onChange={(v) => onChange(v)}
-					onCommit={(v) => onCommit(v)}
-					showPresets={field.showPresets}
-				/>
+				<OnDemand>
+					<DateRangeControl
+						operator={operator}
+						value={value as DateRangeValue | undefined}
+						onChange={(v) => onChange(v)}
+						onCommit={(v) => onCommit(v)}
+						showPresets={field.showPresets}
+					/>
+				</OnDemand>
 			)
 	}
 }

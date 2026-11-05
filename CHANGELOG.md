@@ -4,6 +4,20 @@ All notable changes to jsondeck are written down here. The format follows [Keep 
 
 ## [Unreleased]
 
+### Changed
+
+- `dist/jsondeck.js` is now a small loader (about 2 kB gzipped) instead of the whole library. It loads the core (React and the table) from `dist/chunks/` next to itself, and every other part only when a page uses it: charts and stat tiles, the menus and popovers (on the first hover or click), the date calendar, the row drawer, expanded rows, the right-click menu and copy formats, the layout editor, the code view, site search and the config issues box. A plain table page now downloads about 115 kB of JavaScript instead of 219 kB.
+- `JsonDeck.mount` and `JsonDeck.example` still work right after the script tag: the call waits for the core and returns its handle at once, with a new `ready` promise. `setTheme`, `pageTheme`, `defineConfig` and `version` work at once; the rest of the API is there after the new `JsonDeck.ready` resolves, and throws a clear error before.
+- `jsondeck.js` links `jsondeck.css` itself when the page does not, so one tag is enough.
+- On pages opened from `file://`, use `dist/jsondeck.full.js` (one file with everything, CSS included). `jsondeck.js` cannot load modules there and shows a message pointing at it.
+- `dist/jsondeck.mjs` is split the same way, with its parts in `dist/esm/`.
+- Class merging uses a small merger of our own instead of tailwind-merge (same results on every class jsondeck uses, checked by `scripts/check-merge.mjs`); buttons and inputs are plain elements instead of Base UI's.
+- `version` comes from `package.json` at build time (it was a literal that a release would not have bumped).
+
+### Removed
+
+- The experimental Preact build.
+
 ## [0.1.0] - 2026-11-05
 
 First release.

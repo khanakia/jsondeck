@@ -1,7 +1,7 @@
-import { CountBadge, ICON_BTN, LABEL_BTN, Tip, useToolbarLabels } from "../../components/Tip"
+import { Tip } from "../../components/Tip"
+import { ColumnsTrigger } from "../toolbar/triggers"
 import { useLabels } from "@/lib/labels"
-import { Check, Columns3 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Check } from "lucide-react"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -39,7 +39,6 @@ export function ColumnVisibilityMenu<TNode>({
 	onToggleDetail,
 }: Props<TNode>) {
 	const L = useLabels()
-	const withLabels = useToolbarLabels()
 	const hideableCols = columns.filter(
 		(c) => c.meta?.hideable !== false && c.id !== "__actions",
 	)
@@ -51,11 +50,7 @@ export function ColumnVisibilityMenu<TNode>({
 		<DropdownMenu>
 			<Tip label={L.columns} hint="c">
 				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="sm" aria-label={L.columns} data-jd-columns-trigger="true" className={withLabels ? LABEL_BTN : ICON_BTN}>
-						<Columns3 className="jd:h-3.5 jd:w-3.5" />
-						{withLabels && L.columns}
-						<CountBadge n={hiddenColumns.length} />
-					</Button>
+					<ColumnsTrigger hiddenCount={hiddenColumns.length} />
 				</DropdownMenuTrigger>
 			</Tip>
 			<DropdownMenuContent align="end" className="jd:min-w-44 jd:p-0.5">

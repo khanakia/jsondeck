@@ -8,12 +8,17 @@ import { FileText, Hash, Rows3, Search } from "lucide-react"
 import * as React from "react"
 import { useLabels } from "@/lib/labels"
 import { cn } from "@/lib/utils"
-import { type SearchEntry, type SearchHit, type SearchKind, searchIndex } from "../core/search"
+import { buildSearchIndex, type SearchHit, type SearchKind, searchIndex } from "../core/search"
 
 const KIND_ICON: Record<SearchKind, typeof FileText> = { page: FileText, heading: Hash, text: FileText, row: Rows3 }
 
-export function SearchDialog({ entries, onPick, onClose }: { entries: SearchEntry[]; onPick: (hit: SearchHit) => void; onClose: () => void }) {
+/** What the index is built from (the arguments of core/search buildSearchIndex). */
+export type SearchSource = { pages: Parameters<typeof buildSearchIndex>[0]; rows: Parameters<typeof buildSearchIndex>[1]; rowLabel: NonNullable<Parameters<typeof buildSearchIndex>[2]> }
+
+export function SearchDialog({ source, onPick, onClose }: { source: SearchSource; onPick: (hit: SearchHit) => void; onClose: () => void }) {
 	const L = useLabels()
+	// Built here, on first open, so core/search loads with this chunk instead of with every page.
+	const entries = React.useMemo(() => buildSearchIndex(source.pages, source.rows, source.rowLabel), [source])
 	const [q, setQ] = React.useState("")
 	const [sel, setSel] = React.useState(0)
 	const hits = React.useMemo(() => searchIndex(entries, q), [entries, q])

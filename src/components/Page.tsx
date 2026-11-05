@@ -4,33 +4,21 @@
  * (drag to move, span/height buttons, add, remove). Layout edits are pure
  * functions in core/layout.ts; this file only holds state and wires events.
  */
-import { ChevronDown, ChevronRight, GripVertical, Minus, MoveHorizontal, MoveVertical, Plus, X } from "lucide-react"
+import { ChevronDown, ChevronRight } from "lucide-react"
 import * as React from "react"
-import { Button } from "@/components/ui/button"
 import { ClassNamesContext, mergeClassNames, useClassNames } from "@/lib/classnames"
 import { useLabels } from "@/lib/labels"
 import { cn } from "@/lib/utils"
-import type { PageConfig, PageItem } from "../core/config"
-import { COMPONENTS, TABLELESS, type ComponentKind, type ResolvedItem, type ResolvedPage, type ResolvedSection, starterItem } from "../core/layout"
+import type { PageConfig } from "../core/config"
+import type { ResolvedItem, ResolvedPage, ResolvedSection } from "../core/layout"
 import { toText } from "../core/query"
+import { EditContext, type LayoutOps } from "./edit-context"
 import { ItemView, PageContext } from "./Items"
+import { AddItem, ItemTools, OnDemand } from "./lazy"
 import { SegmentedTabs } from "./Tabs"
 
-/** Edit operations the page raises; Deck applies them to its PageConfig state. */
-export type LayoutOps = {
-	move: (itemId: string, toPath: string, toIndex: number) => void
-	update: (itemId: string, patch: { span?: number; height?: number | undefined }) => void
-	remove: (itemId: string) => void
-	add: (path: string, item: PageItem) => void
-}
+export type { LayoutOps } from "./edit-context"
 
-/** Height step for the taller/shorter buttons, and the floor. */
-const HEIGHT_STEP = 80
-const MIN_HEIGHT = 120
-/** Item height used when "taller" is pressed on an auto-height item. */
-const START_HEIGHT = 320
-
-const EditContext = React.createContext<{ edit: boolean; ops: LayoutOps; nextId: () => string } | null>(null)
 
 function gridTemplate(cols: number[]): string {
 	return cols.map((r) => `minmax(0, ${r}fr)`).join(" ")
@@ -38,7 +26,6 @@ function gridTemplate(cols: number[]): string {
 
 function ItemFrame({ item, section, index }: { item: ResolvedItem; section: ResolvedSection; index: number }) {
 	const ed = React.useContext(EditContext)
-	const L = useLabels()
 	const [over, setOver] = React.useState(false)
 	// The item's own class slots go on top of the global ones, for everything inside it.
 	const itemCls = mergeClassNames(useClassNames(), item.spec.classNames)
@@ -82,44 +69,9 @@ function ItemFrame({ item, section, index }: { item: ResolvedItem; section: Reso
 			}
 		>
 			{edit && ed && (
-				<div className="jd:mb-1 jd:flex jd:items-center jd:gap-0.5 jd:text-[11px]" data-jd="item-tools">
-					<span
-						draggable
-						onDragStart={(e) => {
-							e.dataTransfer.setData("text/jd-item", item.id)
-							e.dataTransfer.effectAllowed = "move"
-						}}
-						title={L.moveHandle}
-						data-jd="drag-handle"
-						className="jd:text-muted-foreground jd:flex jd:cursor-grab jd:items-center jd:gap-1"
-					>
-						<GripVertical className="jd:h-3.5 jd:w-3.5" />
-						{item.kind}
-						{item.table ? ` · ${item.table}` : ""}
-					</span>
-					<span className="jd:flex-1" />
-					<span className="jd:text-muted-foreground jd:mr-1 jd:tabular-nums" data-jd="item-size">
-						{span}/{cols}
-						{item.height ? ` · ${item.height}px` : ""}
-					</span>
-					<Button variant="ghost" size="icon-sm" aria-label={L.narrower} onClick={() => ed.ops.update(item.id, { span: Math.max(1, item.span - 1) })}>
-						<Minus />
-					</Button>
-					<MoveHorizontal className="jd:text-muted-foreground jd:h-3 jd:w-3" />
-					<Button variant="ghost" size="icon-sm" aria-label={L.wider} onClick={() => ed.ops.update(item.id, { span: Math.min(cols, item.span + 1) })}>
-						<Plus />
-					</Button>
-					<Button variant="ghost" size="icon-sm" aria-label={L.shorter} onClick={() => ed.ops.update(item.id, { height: item.height ? (item.height - HEIGHT_STEP < MIN_HEIGHT ? undefined : item.height - HEIGHT_STEP) : undefined })}>
-						<Minus />
-					</Button>
-					<MoveVertical className="jd:text-muted-foreground jd:h-3 jd:w-3" />
-					<Button variant="ghost" size="icon-sm" aria-label={L.taller} onClick={() => ed.ops.update(item.id, { height: (item.height ?? START_HEIGHT - HEIGHT_STEP) + HEIGHT_STEP })}>
-						<Plus />
-					</Button>
-					<Button variant="ghost" size="icon-sm" aria-label={L.remove} onClick={() => ed.ops.remove(item.id)}>
-						<X />
-					</Button>
-				</div>
+				<OnDemand>
+					<ItemTools item={item} span={span} cols={cols} ops={ed.ops} />
+				</OnDemand>
 			)}
 			{item.title && (
 				<div className={cn("jd:mb-1", itemCls.cardHeader)} data-jd="card-header">
@@ -138,58 +90,6 @@ function ItemFrame({ item, section, index }: { item: ResolvedItem; section: Reso
 	)
 }
 
-/** "Add" control at the end of a section in edit mode. */
-function AddItem({ section }: { section: ResolvedSection }) {
-	const ed = React.useContext(EditContext)
-	const ctx = React.useContext(PageContext)
-	const L = useLabels()
-	const [kind, setKind] = React.useState<ComponentKind>("chart")
-	const [table, setTable] = React.useState(ctx?.deck.tables[0]?.name ?? "")
-	const [over, setOver] = React.useState(false)
-	if (!ed?.edit || !ctx) return null
-	const sel = "jd:h-6 jd:rounded jd:border jd:border-input jd:bg-background jd:px-1 jd:text-[11px]"
-	return (
-		<div
-			data-jd="add-item"
-			data-jd-section={section.path}
-			className={cn("jd:col-span-full jd:flex jd:items-center jd:gap-1 jd:rounded jd:border jd:border-dashed jd:p-1 jd:text-[11px]", over && "jd:border-primary")}
-			onDragOver={(e) => {
-				e.preventDefault()
-				setOver(true)
-			}}
-			onDragLeave={() => setOver(false)}
-			onDrop={(e) => {
-				e.preventDefault()
-				setOver(false)
-				const id = e.dataTransfer.getData("text/jd-item")
-				if (id) ed.ops.move(id, section.path, section.items.length)
-			}}
-		>
-			<span className="jd:text-muted-foreground jd:mr-1">{L.dropHere} ·</span>
-			<select aria-label="Component" data-jd="add-kind" className={sel} value={kind} onChange={(e) => setKind(COMPONENTS.find((c) => c === e.target.value) ?? "table")}>
-				{COMPONENTS.map((c) => (
-					<option key={c} value={c}>
-						{c}
-					</option>
-				))}
-			</select>
-			{!TABLELESS.includes(kind) && (
-				<select aria-label="Table" data-jd="add-table" className={sel} value={table} onChange={(e) => setTable(e.target.value)}>
-					{ctx.deck.tables.map((t) => (
-						<option key={t.name} value={t.name}>
-							{t.label}
-						</option>
-					))}
-				</select>
-			)}
-			<Button variant="outline" size="xs" data-jd="add-button" onClick={() => ed.ops.add(section.path, starterItem(ctx.deck, kind, table, ed.nextId()))}>
-				<Plus />
-				{L.addItem}
-			</Button>
-		</div>
-	)
-}
-
 function Grid({ section }: { section: ResolvedSection }) {
 	const ed = React.useContext(EditContext)
 	const gridCls = useClassNames().grid
@@ -199,7 +99,11 @@ function Grid({ section }: { section: ResolvedSection }) {
 			{section.items.map((it, i) => (
 				<ItemFrame key={it.id} item={it} section={section} index={i} />
 			))}
-			<AddItem section={section} />
+			{ed?.edit && (
+				<OnDemand>
+					<AddItem section={section} />
+				</OnDemand>
+			)}
 		</div>
 	)
 }

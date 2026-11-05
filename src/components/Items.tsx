@@ -14,14 +14,9 @@ import { toText } from "../core/query"
 import type { ResolvedDeck } from "../core/resolve"
 import { ClientDataTable, type TableApi } from "../sdt/ClientDataTable"
 import type { FilterCondition } from "../sdt/types"
-import { Chart } from "../viz/Chart"
-import { KeyValueCard } from "../viz/KeyValueCard"
-import { Toc } from "./Toc"
-import { Markdown } from "../viz/Markdown"
-import { StatTile } from "../viz/StatTile"
 import { toSource } from "../core/serialize"
 import type { RenderCtx } from "./cells"
-import { CodeView } from "./CodeView"
+import { Chart, CodeView, KeyValueCard, Markdown, OnDemand, StatTile, Toc } from "./lazy"
 
 /** What the page shares with every component on it. */
 export type PageCtx = {
@@ -209,7 +204,8 @@ function useFitHeight(box: React.RefObject<HTMLDivElement | null>, fixed: boolea
 	}, [box, fixed])
 	React.useLayoutEffect(() => {
 		const fig = box.current?.firstElementChild
-		if (avail === undefined || !fig || passes.current >= FIT_PASSES) return
+		// Nothing to fit while the chart chunk is still loading (the placeholder must not use up the passes).
+		if (avail === undefined || !fig || fig.getAttribute("data-jd") === "pending" || passes.current >= FIT_PASSES) return
 		const over = fig.getBoundingClientRect().height - avail
 		if (over > 0.5 || over < -1) {
 			passes.current += 1
@@ -239,6 +235,7 @@ function ChartItemView({ item, ctx }: { item: ResolvedItem; ctx: PageCtx }) {
 	const sized = fit !== undefined ? { ...withColors, height: fit } : withColors
 	return (
 		<div ref={box} className={cn("jd:h-full jd:min-h-0 jd:overflow-hidden", cls_.chart)} data-jd="chart-box">
+		<OnDemand height={item.height === undefined ? (chart.type === "sparkline" ? SPARK_PENDING_HEIGHT : CHART_PENDING_HEIGHT) : undefined}>
 		<Chart
 			rows={pageRows(ctx, table)}
 			spec={order ? { ...sized, sort: order } : sized}
@@ -250,9 +247,16 @@ function ChartItemView({ item, ctx }: { item: ResolvedItem; ctx: PageCtx }) {
 				ctx.select(item, field, value)
 			}}
 		/>
+		</OnDemand>
 		</div>
 	)
 }
+
+/** Placeholder height while the chart chunk loads (a default chart: 180px plot plus axis labels and legend), so the page barely moves when it arrives. */
+const CHART_PENDING_HEIGHT = 221
+const SPARK_PENDING_HEIGHT = 32
+/** Same for a stat tile and a key-value card (a compact stat tile is 60px tall). */
+const TILE_PENDING_HEIGHT = 60
 
 /** An item, wrapped in a Preview / Code box when its spec sets `code`. */
 export function ItemView({ item }: { item: ResolvedItem }) {
@@ -260,7 +264,11 @@ export function ItemView({ item }: { item: ResolvedItem }) {
 	if (code === undefined || code === false) return <ItemBody item={item} />
 	const { code: _code, ...rest } = item.spec
 	const src = typeof code === "string" ? code : toSource(rest)
-	return <CodeView code={src} lang="js" preview={<ItemBody item={item} />} />
+	return (
+		<OnDemand>
+			<CodeView code={src} lang="js" preview={<ItemBody item={item} />} />
+		</OnDemand>
+	)
 }
 
 function ItemBody({ item }: { item: ResolvedItem }) {
@@ -276,7 +284,11 @@ function ItemBody({ item }: { item: ResolvedItem }) {
 			return <ChartItemView item={item} ctx={ctx} />
 		case "stat": {
 			const { component, table, id, span, height, title, label, ...stat } = spec
-			return <StatTile rows={pageRows(ctx, table)} spec={{ ...stat, label: label ?? title ?? ctx.deck.tables.find((t) => t.name === table)?.label ?? table }} className={cls_.stat} />
+			return (
+				<OnDemand height={TILE_PENDING_HEIGHT}>
+					<StatTile rows={pageRows(ctx, table)} spec={{ ...stat, label: label ?? title ?? ctx.deck.tables.find((t) => t.name === table)?.label ?? table }} className={cls_.stat} />
+				</OnDemand>
+			)
 		}
 		case "kv": {
 			const { component, table, id, span, height, title, key, ...kv } = spec
@@ -285,12 +297,24 @@ function ItemBody({ item }: { item: ResolvedItem }) {
 			const keyCol = t?.key
 			const row = key !== undefined && keyCol ? rows.find((r) => toText(r[keyCol]) === toText(key)) : rows[0]
 			const columnSpecs = t?.columns.map((c) => ({ id: c.id, label: c.label, type: c.type, ...(typeof c.format === "string" ? { format: c.format } : {}) }))
-			return <KeyValueCard spec={kv} row={row} rows={rows} columnSpecs={columnSpecs} className={cls_.kv} />
+			return (
+				<OnDemand height={TILE_PENDING_HEIGHT}>
+					<KeyValueCard spec={kv} row={row} rows={rows} columnSpecs={columnSpecs} className={cls_.kv} />
+				</OnDemand>
+			)
 		}
 		case "markdown":
-			return <Markdown text={spec.text} className={cls_.markdown} anchorPage={ctx.pageId} />
+			return (
+				<OnDemand>
+					<Markdown text={spec.text} className={cls_.markdown} anchorPage={ctx.pageId} />
+				</OnDemand>
+			)
 		case "toc":
-			return <Toc pageId={ctx.pageId} />
+			return (
+				<OnDemand>
+					<Toc pageId={ctx.pageId} />
+				</OnDemand>
+			)
 		case "facets":
 			return <Facets item={item} ctx={ctx} fields={spec.fields} />
 		default:

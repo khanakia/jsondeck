@@ -1,15 +1,15 @@
-import { Input as InputPrimitive } from "@base-ui/react/input"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/** A plain styled <input> (Base UI's Input added nothing used here and cost a Base UI import on first load). */
 function Input({
 	className,
 	type,
 	...props
-}: InputPrimitive.Props & React.RefAttributes<HTMLInputElement>) {
+}: React.ComponentProps<"input">) {
 	return (
-		<InputPrimitive
+		<input
 			type={type}
 			data-slot="input"
 			// Plain flat input: 1px uniform border, NO shadow, NO inset-depth

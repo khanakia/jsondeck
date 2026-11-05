@@ -279,8 +279,17 @@ const notes = `${changelogSection(readFileSync(CHANGELOG, "utf8"), version) ?? `
 
 // ---------- 7. commit + tag ----------
 step(7, `Commit "release: ${TAG}" on ${BRANCH}, tag a child commit that adds dist/`)
+/** Every built file that goes into the tag commit (dist/ recursively: the entry files plus the chunks/ and esm/ folders). */
+const distFiles = readdirSync(join(ROOT, "dist"), { recursive: true }).map((f) => String(f)).filter((f) => statSync(join(ROOT, "dist", f)).isFile()).sort()
 if (DRY) {
 	console.log(`would commit package.json + CHANGELOG.md on ${BRANCH}, then commit dist/ on top (no branch) and tag it ${TAG}`)
+	const groups = [["dist/", (f) => !f.includes("/")], ["dist/chunks/ (loaded by jsondeck.js)", (f) => f.startsWith("chunks/")], ["dist/esm/ (loaded by jsondeck.mjs)", (f) => f.startsWith("esm/")], ["dist/types/", (f) => f.startsWith("types/")]]
+	console.log(`files going into the tag (${distFiles.length}):`)
+	for (const [label, test] of groups) {
+		const files = distFiles.filter(test)
+		const shown = label.startsWith("dist/types") ? `${files.length} .d.ts files` : files.filter((f) => !f.endsWith(".map")).map((f) => f.slice(f.lastIndexOf("/") + 1)).join(", ")
+		console.log(`  ${label}: ${shown}${files.some((f) => f.endsWith(".map")) ? " (+ source maps)" : ""}`)
+	}
 } else if (!resume) {
 	run("git", ["add", "package.json", "CHANGELOG.md"])
 	run("git", ["commit", "--allow-empty", "-m", `release: ${TAG}`])
@@ -341,7 +350,8 @@ for (const t of targets) {
 	} else if (t === "cloudflare") {
 		const need = ["R2_BUCKET", "CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN"].filter((k) => !process.env[k])
 		if (need.length) fail(`--target cloudflare needs ${need.join(", ")}`)
-		for (const f of readdirSync(join(ROOT, "dist")).filter((f) => statSync(join(ROOT, "dist", f)).isFile())) {
+		// Every file, chunks/ and esm/ included: jsondeck.js and jsondeck.mjs load their chunks from next to themselves.
+		for (const f of distFiles) {
 			const key = `${process.env.R2_BUCKET}/jsondeck@${version}/${f}`
 			if (DRY) console.log(`would upload dist/${f} -> r2://${key}`)
 			else run("npx", ["--yes", "wrangler", "r2", "object", "put", key, "--file", `dist/${f}`, "--remote"])

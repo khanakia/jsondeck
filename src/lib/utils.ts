@@ -1,9 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
-import { extendTailwindMerge } from "tailwind-merge"
+import { mergeClasses } from "./merge"
 
-/** tailwind-merge told about our Tailwind v4 prefix, so "jd:h-6 jd:h-7" merges to "jd:h-7". */
-const twMerge = extendTailwindMerge({ prefix: "jd" })
-
+/** Joins class values and resolves conflicts between our `jd:` utilities (the later one wins; see merge.ts). */
 export function cn(...inputs: ClassValue[]) {
-	return twMerge(clsx(inputs))
+	return mergeClasses(clsx(inputs))
 }

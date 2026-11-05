@@ -59,10 +59,9 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "vite build && vite build -c vite.esm.config.ts && node scripts/make-full.mjs && rm -rf dist/types && tsc -p tsconfig.build.json && node scripts/fix-dts.mjs",
-    "build:iife": "vite build",
+    "build": "vite build -c vite.full.config.ts && vite build && vite build -c vite.loader.config.ts && vite build -c vite.esm.config.ts && node scripts/make-full.mjs && rm -rf dist/types && tsc -p tsconfig.build.json && node scripts/fix-dts.mjs",
+    "build:full": "vite build -c vite.full.config.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json && node scripts/expect-type-error.mjs",
-    "build:preact": "vite build -c vite.preact.config.ts",
     "build:viz": "vite build -c src/viz/vite.viz.config.ts",
     "analyze": "vite build -c vite.analyze.config.ts",
     "size": "node scripts/size.mjs",
@@ -87,8 +86,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.68.0",
-    "react-day-picker": "^10.0.2",
-    "tailwind-merge": "^3.7.0"
+    "react-day-picker": "^10.0.2"
   },
   "devDependencies": {
     "@babel/parser": "^8.1.0",
@@ -98,10 +96,10 @@
     "@vitejs/plugin-react": "^6.2.1",
     "magic-string": "^1.4.5",
     "playwright": "^1.64.1",
-    "preact": "^11.1.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "rollup-plugin-visualizer": "^7.1.2",
+    "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.4",
     "terser": "^5.51.2",
     "typescript": "^7.0.2",

@@ -6,6 +6,7 @@
 // The site uses nav: "sidebar" with groups, ⌘K search across pages, heading
 // anchors and a sticky "On this page" table of contents on each guide.
 // Run: node scripts/make-docs.mjs
+import { jsondeckScript } from "./page-script.mjs"
 import { readdirSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 
 const ROOT = new URL("../", import.meta.url)
@@ -181,7 +182,7 @@ const html = `<!doctype html>
 <div id="docs"></div>
 </main>
 <script type="application/json" id="docs-data">${json(data)}</script>
-<script src="../dist/jsondeck.js"></script>
+${jsondeckScript("../")}
 <script>
   // Generated from docs-content/ by scripts/make-docs.mjs (${features.length} features, ${configRef.length} config keys, ${guides.length} guides; ${statusCount.stable ?? 0} stable).
   JsonDeck.mount('#docs', ${json(config)})

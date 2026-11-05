@@ -1,5 +1,6 @@
 // Writes demo/index.html (3-page dashboard) and demo/tabs.html (no pages).
 // Run: node scripts/make-demo.mjs
+import { jsondeckScript } from "./page-script.mjs"
 import { writeFileSync } from "node:fs"
 import { dns, ec2, findings } from "./demo-data.mjs"
 
@@ -143,12 +144,13 @@ const page = (title, script) => `<!doctype html>
 <div id="app" style="margin: 0 16px 16px"></div>
 <p style="margin: 0 16px; font-size: 13px">Last row clicked: <b id="clicked">none</b></p>
 <details style="margin: 8px 16px 16px; font-size: 12px"><summary>Resolved config (JsonDeck.describe)</summary><pre id="describe" style="max-height: 400px; overflow: auto; background: var(--page-soft); padding: 8px"></pre></details>
-<script src="../dist/jsondeck.js"></script>
+${jsondeckScript("../")}
 <script>
 ${script}
   JsonDeck.mount('#app', config)
   const { data: _omit, ...rest } = config
-  document.getElementById('describe').textContent = JSON.stringify(JsonDeck.describe('#data', rest), null, 2)
+  // describe() is there once the library has loaded (at once with the single file).
+  JsonDeck.ready.then(() => { document.getElementById('describe').textContent = JSON.stringify(JsonDeck.describe('#data', rest), null, 2) })
 </script>
 </body>
 </html>

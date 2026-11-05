@@ -1,6 +1,7 @@
-// Settings shared by every library build (IIFE, ESM, Preact IIFE) so the three
-// stay in step: the "@/…" aliases the table files use, the
-// production define, the license banner and the minifier options.
+// Settings shared by every build (the <script> loader, the split chunks, the ES
+// module and the single offline file) so they stay in step: the "@/…" aliases
+// the table files use, the production define, the license banner, the
+// minifier options and how chunks are grouped.
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import type { Alias, BuildEnvironmentOptions } from "vite"
@@ -18,10 +19,11 @@ export const ALIASES: Alias[] = [
  * `process.env` reference behind, which would throw when the ESM file is loaded
  * straight into a browser from a CDN (there is no `process` there).
  */
-export const DEFINE = { "process.env.NODE_ENV": JSON.stringify("production") }
-
 const pkg: unknown = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"))
 const version = typeof pkg === "object" && pkg !== null && "version" in pkg && typeof pkg.version === "string" ? pkg.version : "0.0.0"
+
+/** …plus the package version for src/version.ts (it used to be a literal that releases forgot to bump). */
+export const DEFINE = { "process.env.NODE_ENV": JSON.stringify("production"), __JSONDECK_VERSION__: JSON.stringify(version) }
 
 /** The one license comment kept in each file; every bundled third-party license comment is dropped (see LICENSE + the packages themselves). */
 export const BANNER = `/*! jsondeck v${version} | MIT License | github.com/khanakia/jsondeck */`
@@ -40,4 +42,44 @@ export const MINIFY: Pick<BuildEnvironmentOptions, "minify" | "terserOptions"> =
 		mangle: true,
 		format: { comments: false, preamble: BANNER, preserve_annotations: false },
 	},
+}
+
+/** The same for the split ES module builds: `module` lets terser rename top-level names too (an ES module has no globals to protect). */
+export const MINIFY_ESM: Pick<BuildEnvironmentOptions, "minify" | "terserOptions"> = {
+	minify: "terser",
+	terserOptions: {
+		module: true,
+		compress: { passes: 2, pure_funcs: ["console.debug"] },
+		mangle: true,
+		format: { comments: false, preamble: BANNER, preserve_annotations: false },
+	},
+}
+
+/**
+ * File name of a chunk (inside dist/chunks/ or dist/esm/). No content hash:
+ * every file is served from a versioned CDN path (…/jsondeck@vX.Y.Z/dist/…),
+ * so the tag already busts caches, and plain names keep the README chunk list
+ * readable. Shared chunks are named after the parts that use them
+ * ("shared~StatTile~Chart" becomes "shared-stattile-chart.js").
+ */
+export function CHUNK_NAMES(chunk: { name: string }): string {
+	const name = chunk.name.startsWith("shared~") ? `shared-${chunk.name.slice(7).split("~").join("-")}` : chunk.name
+	return `${name.toLowerCase()}.js`
+}
+
+/**
+ * How the split builds group modules. Without this the bundler makes a small
+ * common chunk for every set of chunks that share a module (a plain table page
+ * then fetched about 15 files). Two rules instead:
+ *  - "core": everything the entry imports statically (`$initial`), so a table
+ *    page needs exactly the entry plus this one file;
+ *  - "shared": code that two or more on-demand chunks share and the core does
+ *    not have (lucide icons, viz colours, the search helpers), merged per set
+ *    of users, with tiny sets folded into a neighbour.
+ */
+export const CODE_SPLITTING = {
+	groups: [
+		{ name: "core", tags: ["$initial" as const], priority: 2 },
+		{ name: "shared", minShareCount: 2, priority: 1, entriesAware: true },
+	],
 }

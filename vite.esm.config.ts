@@ -1,10 +1,12 @@
 // ESM build for apps that bring their own React: dist/jsondeck.mjs with react,
-// react-dom and the JSX runtime left as imports (peer dependencies). Runs after
-// the IIFE build (vite.config.ts) and must not empty dist/.
+// react-dom and the JSX runtime left as imports (peer dependencies), the code
+// every page needs in dist/esm/core.js and the on-demand parts in dist/esm/
+// (same split as the <script> build, loaded with plain `import()`). Runs after
+// the other builds and must not empty dist/.
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, esmExternalRequirePlugin } from "vite"
-import { ALIASES, DEFINE, MINIFY } from "./vite.shared"
+import { ALIASES, CHUNK_NAMES, CODE_SPLITTING, DEFINE, MINIFY_ESM } from "./vite.shared"
 
 const PEERS = [/^react$/, /^react\//, /^react-dom$/, /^react-dom\//]
 
@@ -26,7 +28,8 @@ export default defineConfig({
 		emptyOutDir: false,
 		cssCodeSplit: false,
 		sourcemap: true,
-		...MINIFY,
+		...MINIFY_ESM,
 		lib: { entry: "src/bundle.ts", formats: ["es"], fileName: () => "jsondeck.mjs", cssFileName: "jsondeck" },
+		rollupOptions: { output: { chunkFileNames: (c) => `esm/${CHUNK_NAMES(c)}`, codeSplitting: CODE_SPLITTING } },
 	},
 })

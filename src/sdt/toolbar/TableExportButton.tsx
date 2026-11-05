@@ -1,7 +1,6 @@
-import { ICON_BTN, LABEL_BTN, Tip, useToolbarLabels } from "../../components/Tip"
-import { Download, Loader2 } from "lucide-react"
+import { Tip } from "../../components/Tip"
+import { ExportTrigger } from "./triggers"
 import * as React from "react"
-import { Button } from "@/components/ui/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -66,7 +65,7 @@ export function TableExportButton<TNode, TWhere = unknown>({
 	// Single-mode shortcut — render a plain button, no dropdown.
 	if (mode === "page") {
 		return (
-			<TriggerButton
+			<ExportTrigger
 				label={label}
 				hideIcon={hideIcon}
 				disabled={busy || ctx.isFetching}
@@ -76,7 +75,7 @@ export function TableExportButton<TNode, TWhere = unknown>({
 	}
 	if (mode === "all") {
 		return (
-			<TriggerButton
+			<ExportTrigger
 				label={label}
 				hideIcon={hideIcon}
 				disabled={busy || ctx.isFetching}
@@ -106,7 +105,7 @@ export function TableExportButton<TNode, TWhere = unknown>({
 		<DropdownMenu>
 			<Tip label={label}>
 				<DropdownMenuTrigger asChild>
-					<TriggerButton label={label} hideIcon={hideIcon} disabled={busy || ctx.isFetching} loading={busy} />
+					<ExportTrigger label={label} hideIcon={hideIcon} disabled={busy || ctx.isFetching} loading={busy} />
 				</DropdownMenuTrigger>
 			</Tip>
 			<DropdownMenuContent align="end" className="jd:min-w-44 jd:p-0.5">
@@ -153,27 +152,3 @@ export function TableExportButton<TNode, TWhere = unknown>({
 
 // ── Internal trigger button ──────────────────────────────────────────────
 // React 19 + basecn pass `ref` as a regular prop and base-ui's
-// DropdownMenuTrigger `asChild` handles ref injection — no forwardRef
-// wrapper needed.
-
-function TriggerButton({
-	label,
-	hideIcon,
-	loading,
-	disabled,
-	onClick,
-}: {
-	label: string
-	hideIcon?: boolean | undefined
-	loading?: boolean | undefined
-	disabled?: boolean | undefined
-	onClick?: (() => void) | undefined
-}) {
-	const withLabels = useToolbarLabels()
-	return (
-		<Button variant="ghost" size="sm" aria-label={label} className={withLabels ? LABEL_BTN : ICON_BTN} disabled={disabled} onClick={onClick}>
-			{!hideIcon && (loading ? <Loader2 className="jd:h-3.5 jd:w-3.5 jd:animate-spin" /> : <Download className="jd:h-3.5 jd:w-3.5" />)}
-			{withLabels && label}
-		</Button>
-	)
-}

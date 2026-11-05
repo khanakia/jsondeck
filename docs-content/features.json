@@ -1128,12 +1128,23 @@
     "id": "cdn-script",
     "name": "One script tag",
     "category": "Build & CDN",
-    "summary": "dist/jsondeck.js (React bundled, global JsonDeck) plus dist/jsondeck.css.",
+    "summary": "dist/jsondeck.js: a small loader (global JsonDeck) that fetches the core and loads every other part (charts, menus, calendar, drawer, editor, code view) on demand; it links dist/jsondeck.css itself.",
     "config": null,
     "example": "ex-zero",
     "since": "0.1.0",
     "status": "check",
     "checkReason": "Not released yet; served from the GitHub tag through jsDelivr once v0.1.0 is tagged."
+  },
+  {
+    "id": "on-demand",
+    "name": "On-demand loading",
+    "category": "Build & CDN",
+    "summary": "The split build fetches only what a page uses: a plain table page downloads about 115 kB of JavaScript (React included); charts, popups, the calendar, the drawer, the editor and the code view load the first time they are needed.",
+    "config": null,
+    "example": null,
+    "since": "0.1.1",
+    "status": "check",
+    "checkReason": "Not released yet; ships with the next tag."
   },
   {
     "id": "esm-build",
@@ -1150,7 +1161,7 @@
     "id": "file-protocol",
     "name": "Works from file://",
     "category": "Build & CDN",
-    "summary": "No fetch and no network calls: a page with embedded data works opened from disk.",
+    "summary": "dist/jsondeck.full.js is one file with everything (CSS included): no fetch and no network calls, so a page with embedded data works opened from disk. The split jsondeck.js shows a message pointing at it there.",
     "config": "data",
     "example": null,
     "since": "0.1.0",

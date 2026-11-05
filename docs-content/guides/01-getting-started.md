@@ -9,7 +9,7 @@ jsondeck is served from GitHub release tags through jsDelivr; it is not on npm. 
 ## The smallest page
 
 :::steps
-1. Add the stylesheet and the script.
+1. Add the script (it links the stylesheet itself; linking it yourself, as below, lets it start loading sooner).
 2. Put your data in a `<script type="application/json">` tag (or pass an object).
 3. Call `JsonDeck.mount` with the element and the data.
 :::
@@ -40,7 +40,17 @@ jsondeck is served from GitHub release tags through jsDelivr; it is not on npm. 
 Every named array in `data` becomes a table, one tab each. Column types are guessed from the values (number, date, datetime, URL, IP, email, boolean, enum, JSON, long text, text), labels are made from the keys, and every table gets search, filters, multi-sort, pagination, saved views and CSV/JSON export.
 
 :::tip
-`data` can be an object of named arrays, a single array (it becomes a table called `rows`), or the selector of a JSON script tag. The page works opened straight from disk (`file://`): jsondeck makes no network calls.
+`data` can be an object of named arrays, a single array (it becomes a table called `rows`), or the selector of a JSON script tag. jsondeck never sends your data anywhere.
+:::
+
+## What loads, and when
+
+`jsondeck.js` is a small loader. It fetches the core (React and the table, about 113 kB gzipped) from next to itself, and every other part only when a page uses it: charts and stat tiles when one is on the page, menus and popovers on the first hover or click, the date calendar when a date filter opens, the row drawer, the layout editor, the code view, site search. A plain table page downloads about 115 kB of JavaScript in total.
+
+`JsonDeck.mount` and `JsonDeck.example` can be called right after the script tag: the call waits for the core and returns its handle at once (`handle.ready` resolves once it has rendered). `setTheme`, `pageTheme`, `defineConfig` and `version` work at once too; the rest of the API (`describe`, `htmlSnippet`, `THEME_TOKENS`, ...) is there after `await JsonDeck.ready`.
+
+:::warning
+Pages opened straight from disk (`file://`) cannot use `jsondeck.js`: browsers block the module loading it relies on, and it shows a message saying so. Use `jsondeck.full.js` there, the single file with everything (CSS included) that fetches nothing.
 :::
 
 ## Mount returns issues

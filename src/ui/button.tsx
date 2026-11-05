@@ -1,6 +1,5 @@
-import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
-import { isValidElement } from "react"
+import type * as React from "react"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -61,36 +60,16 @@ const buttonVariants = cva(
 	},
 )
 
-type ButtonProps = ButtonPrimitive.Props &
-	VariantProps<typeof buttonVariants> & {
-		ref?: React.RefObject<HTMLButtonElement | null> | undefined
-	}
-
 /**
- * True when `render` swaps the <button> for another element (a router Link,
- * an <a>). Base UI must then be told `nativeButton={false}`, or it warns and
- * adds button semantics an anchor should not have.
+ * A plain <button>. It used Base UI's Button before, which only adds
+ * `render` / `focusableWhenDisabled` (never used here) and pulled Base UI into
+ * the first download of every page. Menu and popover triggers still wrap it
+ * (`render={<Button />}`), so it forwards `ref` and every DOM prop as is.
  */
-export function rendersNonButton(render: ButtonProps["render"]): boolean {
-	if (render === undefined) return false
-	return !(isValidElement(render) && render.type === "button")
-}
+type ButtonProps = React.ComponentProps<"button"> & VariantProps<typeof buttonVariants>
 
-function Button({
-	className,
-	variant,
-	size,
-	nativeButton,
-	...props
-}: ButtonProps) {
-	return (
-		<ButtonPrimitive
-			data-slot="button"
-			className={cn(buttonVariants({ variant, size, className }))}
-			nativeButton={nativeButton ?? !rendersNonButton(props.render)}
-			{...props}
-		/>
-	)
+function Button({ className, variant, size, type = "button", ...props }: ButtonProps) {
+	return <button data-slot="button" type={type} className={cn(buttonVariants({ variant, size, className }))} {...props} />
 }
 
 export { Button, buttonVariants }

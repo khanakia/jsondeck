@@ -1,7 +1,8 @@
-import { ICON_BTN, LABEL_BTN, Tip, useToolbarLabels } from "../../components/Tip"
+import { Tip } from "../../components/Tip"
+import { ViewsTrigger, viewsTip } from "../toolbar/triggers"
+import { isModified } from "./modified"
 import { useLabels } from "@/lib/labels"
 import {
-	Bookmark,
 	BookmarkCheck,
 	Check,
 	Pin,
@@ -12,7 +13,6 @@ import {
 	Trash2,
 } from "lucide-react"
 import * as React from "react"
-import { Button } from "@/components/ui/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -52,7 +52,6 @@ export function ViewSelector({
 	onSetFavorite,
 }: Props) {
 	const L = useLabels()
-	const withLabels = useToolbarLabels()
 	const [saveDialogOpen, setSaveDialogOpen] = React.useState(false)
 
 	const activeView = views.find((v) => v.id === activeViewId) ?? null
@@ -61,14 +60,9 @@ export function ViewSelector({
 	return (
 		<>
 			<DropdownMenu>
-				<Tip label={activeView ? `${L.views}: ${activeView.name}` : L.views} hint="v">
+				<Tip label={viewsTip(L, activeView?.name)} hint="v">
 					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" size="sm" aria-label={L.views} data-jd-views-trigger="true" className={activeView || withLabels ? LABEL_BTN : ICON_BTN}>
-							<Bookmark className="jd:h-3.5 jd:w-3.5" />
-							{/* The view name shows only when a view is active (or labels are on). */}
-							{(activeView || withLabels) && <span className="jd:max-w-[10rem] jd:truncate">{activeView?.name ?? L.viewsAll}</span>}
-							{modified && <span className="jd:bg-primary jd:absolute jd:right-0.5 jd:top-0.5 jd:h-1.5 jd:w-1.5 jd:rounded-full" title={L.unsavedChanges} />}
-						</Button>
+						<ViewsTrigger activeName={activeView?.name} modified={modified} />
 					</DropdownMenuTrigger>
 				</Tip>
 				<DropdownMenuContent align="end" className="jd:w-56 jd:p-0.5">
@@ -260,74 +254,4 @@ function ViewRow({
 			)}
 		</>
 	)
-}
-
-// ── Modified detection ───────────────────────────────────────────────────
-
-function isModified(state: TableState, view: SavedView | null): boolean {
-	if (!view) {
-		// No view active — "modified" if anything is set
-		return (
-			state.search !== "" || state.filters.length > 0 || state.sort.length > 0
-		)
-	}
-	const viewHidden = view.state.hiddenColumns ?? []
-	const viewOrder = view.state.columnOrder ?? []
-	const viewSizes = view.state.columnSizes ?? {}
-	return (
-		state.search !== view.state.search ||
-		!arraysShallowEq(state.filters, view.state.filters, condEq) ||
-		!arraysShallowEq(state.sort, view.state.sort, sortEq) ||
-		!arraysShallowEq(state.hiddenColumns, viewHidden, strEq) ||
-		!arraysShallowEq(state.columnOrder, viewOrder, strEq) ||
-		!sizesEq(state.columnSizes, viewSizes)
-	)
-}
-
-function strEq(a: string, b: string): boolean {
-	return a === b
-}
-
-function sizesEq(
-	a: Record<string, number>,
-	b: Record<string, number>,
-): boolean {
-	const ak = Object.keys(a)
-	const bk = Object.keys(b)
-	if (ak.length !== bk.length) return false
-	for (const k of ak) if (a[k] !== b[k]) return false
-	return true
-}
-
-function arraysShallowEq<T>(
-	a: T[],
-	b: T[],
-	eq: (x: T, y: T) => boolean,
-): boolean {
-	if (a.length !== b.length) return false
-	const it = b[Symbol.iterator]()
-	for (const x of a) {
-		const n = it.next()
-		if (n.done || !eq(x, n.value)) return false
-	}
-	return true
-	return true
-}
-
-function condEq(
-	a: { fieldId: string; operator: string; value: unknown },
-	b: { fieldId: string; operator: string; value: unknown },
-): boolean {
-	return (
-		a.fieldId === b.fieldId &&
-		a.operator === b.operator &&
-		JSON.stringify(a.value) === JSON.stringify(b.value)
-	)
-}
-
-function sortEq(
-	a: { fieldId: string; direction: string },
-	b: { fieldId: string; direction: string },
-): boolean {
-	return a.fieldId === b.fieldId && a.direction === b.direction
 }

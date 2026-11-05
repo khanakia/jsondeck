@@ -6,10 +6,13 @@
  */
 import { BUILTIN_FORMATS, parseFormat } from "./formats"
 import { humanize } from "./labels"
-import { getField, type Row } from "./aggregate"
+import { getField, type Row } from "./field"
 
-export const COPY_FORMATS = ["json", "csv", "tsv", "markdown", "text"] as const
-export type CopyFormat = (typeof COPY_FORMATS)[number]
+import type { CopyFormat } from "./copy"
+
+// The format list and copyText live in copy.ts (always loaded); these serializers load with the
+// right-click menu / selection bar (dynamic import in sdt/ClientDataTable.tsx).
+export { COPY_FORMATS, type CopyFormat, copyText } from "./copy"
 
 /**
  * The part of a column the copier needs. Structural, so the table's resolved
@@ -149,40 +152,3 @@ export function serializeRows(format: CopyFormat, rows: Row[], columns: CopyColu
 }
 
 // ── clipboard ───────────────────────────────────────────────────────────
-
-/** Old path for pages where the async API is missing or refused (file://, older browsers, no focus). */
-function legacyCopy(str: string): boolean {
-	if (typeof document === "undefined") return false
-	const t = document.createElement("textarea")
-	t.value = str
-	t.setAttribute("readonly", "")
-	t.style.position = "fixed"
-	t.style.top = "0"
-	t.style.left = "0"
-	t.style.opacity = "0"
-	document.body.appendChild(t)
-	const prev = document.activeElement
-	try {
-		t.select()
-		// execCommand is deprecated but is the only synchronous fallback that works from file:// pages.
-		return document.execCommand("copy")
-	} catch {
-		return false
-	} finally {
-		t.remove()
-		if (prev instanceof HTMLElement) prev.focus()
-	}
-}
-
-/** Copy text. Resolves true only when the browser reports the copy worked. */
-export async function copyText(str: string): Promise<boolean> {
-	if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-		try {
-			await navigator.clipboard.writeText(str)
-			return true
-		} catch {
-			// Refused (permissions, no focus, insecure context): try the old way below.
-		}
-	}
-	return legacyCopy(str)
-}

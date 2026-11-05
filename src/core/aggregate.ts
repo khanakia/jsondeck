@@ -7,7 +7,11 @@
  * query.ts), so a chart `where` and a table filter mean exactly the same thing.
  */
 import type { FilterFieldType, FilterOperator } from "../sdt/types"
+import { getField } from "./field"
 import { localDay, matchCondition, type Row, toText } from "./query"
+
+/** Read a field by name, falling back to a dot path (`tags.env`) when no flat key matches (field.ts). */
+export { getField }
 
 export type { Row }
 
@@ -41,19 +45,6 @@ function guessClauseType(value: unknown): FilterFieldType {
 	if (typeof v === "number") return "number"
 	if (typeof v === "string" && RE_DATEISH.test(v)) return "date"
 	return "text"
-}
-
-/** Read a field by name, falling back to a dot path (`tags.env`) when no flat key matches. */
-export function getField(row: Row, field: string): unknown {
-	if (field in row) return row[field]
-	if (!field.includes(".")) return undefined
-	let cur: unknown = row
-	for (const part of field.split(".")) {
-		if (cur === null || typeof cur !== "object") return undefined
-		const next: unknown = Reflect.get(cur, part)
-		cur = next
-	}
-	return cur
 }
 
 /** Compile a `where` into a row predicate once (cheap to call per row). */

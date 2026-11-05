@@ -5,10 +5,10 @@
 [![jsDelivr](https://data.jsdelivr.com/v1/package/gh/khanakia/jsondeck/badge)](https://www.jsdelivr.com/package/gh/khanakia/jsondeck)
 [![TypeScript](https://img.shields.io/badge/types-TypeScript-3178c6.svg)](#typescript)
 
-**jsondeck turns JSON into an interactive dashboard with one `<script>` tag.** Give it an array of objects and it builds a compact data table with search, filters, multi-column sort, pagination, grouping, saved views, column controls and copy/export. Add a small config and the same JSON also gives you charts, stat tiles, key-value cards, linked tables (master-detail, drill-down) and multi-page layouts with sections and grids. It is a JSON viewer, a data grid and a dashboard builder in one file, loaded from the jsDelivr CDN, with no build step, no server and no network calls, so it works even from a page opened with `file://`.
+**jsondeck turns JSON into an interactive dashboard with one `<script>` tag.** Give it an array of objects and it builds a compact data table with search, filters, multi-column sort, pagination, grouping, saved views, column controls and copy/export. Add a small config and the same JSON also gives you charts, stat tiles, key-value cards, linked tables (master-detail, drill-down) and multi-page layouts with sections and grids. It is a JSON viewer, a data grid and a dashboard builder loaded from the jsDelivr CDN with one tag, with no build step, no server and no network calls of its own. It loads only what a page uses: a plain table page downloads about 115 kB of JavaScript, React included, and charts, menus or the date calendar load the first time they are needed. For pages opened from disk (`file://`) there is a single offline file, `jsondeck.full.js`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.full.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.js"></script>
 
 <script type="application/json" id="data">{ "hosts": [ { "ip": "10.0.0.1", "status": "up" } ] }</script>
 <div id="app"></div>
@@ -42,35 +42,38 @@ jsondeck is for the case where you have JSON and want a usable, good-looking vie
 - **Zero config first.** Column types (numbers, dates, booleans, status values, IPs, URLs, tags) are guessed from the data, so `mount('#app', { data })` already gives a full table. Config only changes what the guess got wrong.
 - **A dashboard, not only a grid.** Charts, stat tiles, cards and Markdown read the same data as the tables, and clicking a chart filters the page.
 - **Power-user tables.** 28px rows, keyboard shortcuts, quick filters, saved views, grouping with totals, right-click copy as JSON, CSV, TSV or Markdown.
-- **One file, offline.** One script tag (CSS included), no fetch, no telemetry, works from `file://`.
+- **Small first load.** One script tag; the parts a page does not use are never downloaded. No telemetry, and a single offline file for `file://` pages.
 - **Typed.** `defineConfig(data, config)` checks table and column names against your data, so a typo is a type error.
 
 ## Install
 
 jsondeck is served from GitHub through jsDelivr. Always pin the version tag (`@v0.1.0`) so a later release never changes your page. It is not on npm; that may come later.
 
-### One tag (recommended)
+### Script tag (recommended)
 
-The script with the CSS built in. It adds one `<style data-jsondeck>` to the page head when it loads, and skips that when the page already links `jsondeck.css`.
+```html
+<script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.js"></script>
+```
+
+`jsondeck.js` is a small loader (1.7 kB gzipped) that sets the global `JsonDeck`. It fetches the core (React and the table) from next to itself, plus every other part only when the page uses it: charts and stat tiles when one is on the page, menus and popovers on the first hover or click, the date calendar when a date filter opens, the row drawer, the layout editor, the code view and site search (see [Files and sizes](#files-and-sizes)). It also links `jsondeck.css` unless the page already links it; linking it yourself in `<head>` lets it start loading sooner:
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.css">
+```
+
+Calls made right after the tag work: `JsonDeck.mount` and `JsonDeck.example` wait for the core and return their handle at once (`issues` fills in and `handle.ready` resolves once rendered). `setTheme`, `pageTheme`, `defineConfig` and `version` work at once too. The rest of the API (`describe`, `htmlSnippet`, `toSource`, `THEME_TOKENS` and the other constants) is there after `await JsonDeck.ready`; before that it throws an error that says so.
+
+### One file, for offline and `file://` pages
 
 ```html
 <script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.full.js"></script>
 ```
 
-### Script and stylesheet
-
-Two files, so the browser can cache and load the CSS on its own:
-
-```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.css">
-<script src="https://cdn.jsdelivr.net/gh/khanakia/jsondeck@v0.1.0/dist/jsondeck.js"></script>
-```
-
-Both scripts bundle React and set one global, `JsonDeck`. Both also work from `file://`: download the files next to your HTML and point the tags at them.
+Everything in one file, CSS included: it adds one `<style data-jsondeck>` to the page head (skipped when the page links `jsondeck.css`) and fetches nothing, so it works from a page opened with `file://`. Use it there: browsers block module loading on `file://` pages, so `jsondeck.js` cannot load its parts and shows a message pointing at this file instead. It is bigger (237 kB gzipped), since nothing is left out.
 
 ### ES module (bring your own React)
 
-`dist/jsondeck.mjs` leaves `react` and `react-dom` (18 or later) to your page or app, so React is not shipped twice. With React from an ESM CDN through an import map (`?external=react` makes react-dom use the same React copy):
+`dist/jsondeck.mjs` leaves `react` and `react-dom` (18 or later) to your page or app, so React is not shipped twice. It splits the same way as the script: the core is `dist/esm/core.js` (45.6 kB gzipped without React), and the other parts load from `dist/esm/` with plain `import()` when first used. With React from an ESM CDN through an import map (`?external=react` makes react-dom use the same React copy):
 
 ```html
 <script type="importmap">
@@ -93,14 +96,45 @@ Browsers do not run module scripts from `file://`, so the ES module needs a page
 
 ## Files and sizes
 
-| File | What it is | Raw | gzip | brotli |
-|---|---|---|---|---|
-| `dist/jsondeck.full.js` | one-tag script: React and CSS built in | 782 kB | 229 kB | 193 kB |
-| `dist/jsondeck.js` | script, React built in, needs `jsondeck.css` | 715 kB | 219 kB | 184 kB |
-| `dist/jsondeck.css` | stylesheet for the two-file setup and the ES module | 64 kB | 10 kB | 9 kB |
-| `dist/jsondeck.mjs` | ES module, React from your app | 509 kB | 154 kB | 129 kB |
+What a page downloads, measured from the browser's network log by `scripts/verify-cdn.mjs` (gzip level 9, JavaScript only; `jsondeck.css` adds 10.2 kB):
 
-Every file has a `.map` source map beside it, and `dist/types/` holds the type definitions. jsDelivr serves gzip or brotli, so the brotli column is roughly what a browser downloads. Measure with `node scripts/size.mjs`; see what is inside with `pnpm analyze`. The largest parts of the script are React DOM, the Base UI menus and popovers, the table engine and the date-range calendar.
+| Page | JavaScript on first load |
+|---|---|
+| Plain zero-config table, `jsondeck.js` | 114.6 kB (loader, entry, core with React); it was 219 kB before the split |
+| The demo dashboard (stat tiles, charts, facets, a table), `jsondeck.js` | 125 kB (adds the stat tile and chart chunks) |
+| Any page, `jsondeck.full.js` | 237 kB (everything, CSS included) |
+
+The files:
+
+| File | What it is | gzip |
+|---|---|---|
+| `dist/jsondeck.js` | the `<script>` loader (global `JsonDeck`); fetches what follows from next to itself | 1.7 kB |
+| `dist/chunks/index.js` + `core.js` + `rolldown-runtime.js` | the core every page loads: React, React DOM, the table, config resolution, toolbar | 112.9 kB |
+| `dist/jsondeck.full.js` | the single offline file: everything, CSS included, nothing fetched (`file://` pages) | 236.9 kB |
+| `dist/jsondeck.css` | the stylesheet (`jsondeck.js` links it unless the page does) | 10.2 kB |
+| `dist/jsondeck.mjs` + `dist/esm/core.js` | ES module core, React from your app | 45.9 kB |
+
+The on-demand chunks in `dist/chunks/` (the same split exists in `dist/esm/` for the ES module, without React):
+
+| Chunk | gzip | Loaded when |
+|---|---|---|
+| `popups.js` | 60.8 kB | first hover, focus or click on a toolbar control (filter, sort, columns, views, group by, more, export), a column header menu or rows-per-page; a filter pill; the shortcuts dialog. Holds Base UI (menus, popovers, dialogs) and those controls |
+| `shared-daterangecontrol-datecontrol.js` + `daterangecontrol.js` + `datecontrol.js` | 22.0 kB | a date filter is opened (the calendar: react-day-picker and date-fns) |
+| `shared-stattile-chart.js` + `shared-group-keyvaluecard-stattile-chart.js` + `stattile.js` + `keyvaluecard.js` | 10.7 kB | a chart, stat tile or key-value card is on the page (charts, sparklines, aggregation) |
+| `markdown.js` + `shared-codeview-markdown.js` + `shared-searchdialog-markdown.js` | 7.4 kB | a Markdown item (callouts, steps, heading anchors, code fences) |
+| `shared-codeview-markdown.js` | 2.5 kB | a Preview / Code box (`code: true`, `JsonDeck.example`): the code view and highlighter |
+| `contextmenu.js` + `clipboard.js` | 3.2 kB | right-click on a row (the copy formats also load when rows are selected) |
+| `searchdialog.js` | 2.0 kB | decks with site search, once the page is idle |
+| `edittools.js` + `shared-edittools-layout-edit.js` | 2.7 kB | the layout editor is switched on |
+| `rowfeatures.js` | 1.8 kB | a table with `quickFilters`, or rows get selected (selection bar) |
+| `rowdrawer.js` | 1.6 kB | a row or a link to a related row is opened in the drawer |
+| `rowdetail.js` | 1.4 kB | a row is expanded (detail fields, nested tables) |
+| `toc.js` | 1.1 kB | an "On this page" outline |
+| `group.js` | 0.7 kB | a table is grouped |
+| `issuesbox.js` | 0.5 kB | the config has issues |
+| `shared-*.js` (seven files under 1 kB each) | | small pieces two of the parts above share |
+
+Every file has a `.map` source map beside it, and `dist/types/` holds the type definitions. jsDelivr serves gzip or brotli (brotli is about 15% smaller). Measure with `node scripts/size.mjs`; see what is inside each chunk with `pnpm analyze` and `node scripts/chunk-report.mjs`. Most of the core is React DOM (about 60 kB gzipped); the table engine, config resolution and the toolbar make up the rest.
 
 ## Browser support
 
@@ -162,7 +196,7 @@ All screenshots use fake demo data. Regenerate them with `node scripts/screensho
 A JavaScript library that turns JSON data into an interactive dashboard: data tables with filters, sort and pagination, plus charts, stat tiles and linked tables, from one `<script>` tag.
 
 **Do I need React, a bundler or a server?**
-No. `jsondeck.full.js` and `jsondeck.js` bundle React and run on any page, even one opened from disk with `file://`. Only the ES module expects you to provide React.
+No. `jsondeck.js` and `jsondeck.full.js` bundle React and run on any page; `jsondeck.full.js` also works on a page opened from disk with `file://`. Only the ES module expects you to provide React.
 
 **Does it send my data anywhere?**
 No. jsondeck makes no network calls. Data is read from a `<script type="application/json">` block or an object you pass in, and stays in the page.
@@ -186,7 +220,7 @@ For now jsondeck is published as tagged GitHub releases served by jsDelivr. An n
 
 ```sh
 pnpm install
-pnpm build        # dist/: jsondeck.js, jsondeck.full.js, jsondeck.mjs, jsondeck.css, maps, types
+pnpm build        # dist/: jsondeck.js (loader) + chunks/, jsondeck.full.js, jsondeck.mjs + esm/, jsondeck.css, maps, types
 pnpm typecheck    # strict TypeScript over src and the typed examples
 task verify       # every headless browser check over http and file://
 task size         # raw, gzip and brotli per file
@@ -203,6 +237,7 @@ task release       # the same, then asks, commits, tags, pushes and creates the 
 
 - Versions only ever go up by one patch number (`0.1.0`, `0.1.1`, `0.1.2`); `--bump minor` and `--bump major` are refused. The first release is `0.1.0` as written in `package.json`; after that, write the changes under `## [Unreleased]` in `CHANGELOG.md` and the script moves them under the new version.
 - `main` never holds `dist/`. The script commits `release: vX.Y.Z` (version and changelog) on `main`, then makes one more commit on top of it, on no branch, that adds the built `dist/`, and points the tag `vX.Y.Z` at that commit. jsDelivr serves `https://cdn.jsdelivr.net/gh/khanakia/jsondeck@vX.Y.Z/dist/...` from the tag.
+- The tag commit carries all of `dist/`, including `dist/chunks/` and `dist/esm/`, which `jsondeck.js` and `jsondeck.mjs` load from next to themselves; `task release:dry` lists every file going into the tag.
 - It refuses a dirty tree or a branch other than `main`, and it is safe to run again: a tag made but not pushed is pushed, an existing GitHub release is left alone, and a released version is never released twice.
 - The internal-info scan reads its patterns from `.git/info/release-denylist` or the `RELEASE_DENYLIST` environment variable.
 - There is also a manual-only workflow, `.github/workflows/release.yml` (Actions → Release → Run workflow), which runs `node scripts/release.mjs --yes`.
@@ -219,7 +254,7 @@ task release       # the same, then asks, commits, tags, pushes and creates the 
    - `scripts/verify-site.mjs` that walks every route in light and dark
 2. **First release:** make the GitHub repo public, run `task release` for `v0.1.0`, check the jsDelivr links, then mark the CDN and ESM features stable in `docs-content/features.json`.
 3. **Page filter dropdowns:** restyle the page-level filter selects (Severity, Region…) to match the rest of the UI instead of plain browser selects.
-4. **Bundle size:** the script is about 219 kB gzipped. The date-range calendar costs about 20 kB gzipped (measured by building without it); a small calendar of our own could replace it once it matches the current keyboard and screen-reader support. An experimental Preact build (`pnpm build:preact`) is 161 kB gzipped but fails two table-filter checks, so it is not shipped.
+4. **First-load size:** a plain table page now downloads about 115 kB of JavaScript, about 60 kB of it React DOM. Further savings would come from splitting more of the table core (the right-click menu items, saved views, the page editor state) or from a smaller calendar of our own (the date calendar chunk is about 21 kB gzipped).
 5. **Saved views by URL:** share a saved view as a link.
 6. **Load data from a URL:** today data must be embedded in the page or passed as an object.
 

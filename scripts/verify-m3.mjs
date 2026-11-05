@@ -15,8 +15,21 @@ const errors = []
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()))
 page.on("pageerror", (e) => errors.push(String(e)))
 const results = []
+/**
+ * After a page load: wait until jsondeck has rendered and no on-demand part is
+ * still loading (no `[data-jd="pending"]` placeholder), so a click cannot land
+ * while a chart or tile above is still arriving and moves the layout.
+ */
+const settledLoad = async (pg) => {
+	await pg.waitForSelector('[data-jd="root"], [data-jd="example"]', { timeout: 15000 }).catch(() => undefined)
+	await pg.waitForFunction(() => !document.querySelector('[data-jd="pending"]'), null, { timeout: 15000 }).catch(() => undefined)
+}
 const SCROLL_PAGES = ["#/overview", "#/inventory", "#/findings"].map((h) => `${url.split("#")[0]}${h}`)
-const check = (name, ok, info = "") => results.push({ name, ok: !!ok, info: String(info).slice(0, 160) })
+const check = (name, ok, info = "") => {
+	results.push({ name, ok: !!ok, info: String(info).slice(0, 160) })
+	// VERIFY_TRACE=1 prints each check as it runs (find where a run stops).
+	if (process.env.VERIFY_TRACE) console.log(`  ${ok ? "ok" : "FAIL"}  ${name}`)
+}
 const item = (id) => page.locator(`[data-jd-item="${id}"]`)
 const tableCol = async (id, label) => {
 	const t = item(id)
@@ -31,6 +44,7 @@ const go = async (id) => {
 }
 
 await page.goto(url)
+await settledLoad(page)
 await page.waitForSelector("[data-jd-page-link]")
 
 // 1. pages + navigation + hash
@@ -41,9 +55,11 @@ check("navigation sets the URL hash", (await page.evaluate(() => location.hash))
 check("page content switches", (await item("ec2-table").count()) === 1 && (await item("sev-chart").count()) === 0)
 const base = url.split("#")[0]
 await page.goto(`${base}#/findings`)
+await settledLoad(page)
 await page.waitForSelector("[data-jd-page-link]")
 check("opening #/findings shows that page", (await page.locator('[data-jd-page-link="findings"]').getAttribute("aria-current")) === "page" && (await item("rich-table").count()) === 1)
 await page.goto(`${base}#/overview`)
+await settledLoad(page)
 await page.waitForSelector("[data-jd-page-link]")
 await page.screenshot({ path: `${prefix}-overview.png`, fullPage: true })
 
@@ -52,6 +68,7 @@ const pageEl = page.locator("[data-jd-page]")
 check("section titles + description", (await pageEl.getByText("Breakdown", { exact: true }).count()) === 1 && (await pageEl.getByText("Click a bar or slice").count()) === 1)
 check("collapsed section hides its items", (await item("notes").count()) === 0)
 await page.locator('[data-jd="section-toggle"]', { hasText: "Notes" }).click()
+await item("notes").locator('[data-jd="markdown"] strong').first().waitFor({ timeout: 5000 }).catch(() => undefined) // markdown is an on-demand chunk
 check("collapsible section expands (markdown renders)", (await item("notes").locator('[data-jd="markdown"] strong').count()) > 0)
 
 // 3. grid
@@ -151,6 +168,8 @@ check("dashboard has no config issues box (bad config moved to tabs.html / examp
 // 8. layout editing
 await go("overview")
 await page.locator('[data-jd="edit-toggle"]').click()
+await page.locator('[data-jd="item-tools"]').first().waitFor({ timeout: 5000 }).catch(() => undefined) // the editor tools are an on-demand chunk
+await page.locator('[data-jd="add-item"]').first().waitFor({ timeout: 5000 }).catch(() => undefined)
 check("edit mode shows item tools", (await page.locator('[data-jd="item-tools"]').count()) >= 8)
 const sizeBefore = await item("sev-chart").locator('[data-jd="item-size"]').textContent()
 await item("sev-chart").getByRole("button", { name: "Wider" }).click()
@@ -221,14 +240,19 @@ check("dark mode", (await page.locator("[data-jd-theme]").getAttribute("data-jd-
 	p4.on("pageerror", (e) => errors.push(String(e)))
 	const base4 = url.split("#")[0]
 	await p4.goto(`${base4}#/overview`)
+	await settledLoad(p4)
 	await p4.waitForSelector("[data-jd-page-link]")
 	const ft = p4.locator('[data-jd-item="find-table"]')
 	check("expand: chevron column", (await ft.locator('[data-jd="expand"]').count()) === 25)
 	await ft.locator('[data-jd="expand"]').first().click()
+	// The expanded row is an on-demand chunk: wait for it, as a user does.
+	await ft.locator("[data-jd-detail-field]").first().waitFor()
+	await ft.locator('[data-jd="nested"]').first().waitFor()
 	const fieldsShown = await ft.locator("[data-jd-detail-field]").evaluateAll((els) => els.map((e) => e.getAttribute("data-jd-detail-field")))
 	check("expand: detail shows the hidden columns", ["detail", "fix_idea", "break_risk", "first_seen"].every((f) => fieldsShown.includes(f)), fieldsShown.join(","))
 	check("drill-down: nested related table with breadcrumb", (await ft.locator('[data-jd="nested"]').count()) === 1 && (await ft.locator('[data-jd="breadcrumb"]').first().textContent()).includes("Instance"))
 	await ft.locator('[data-jd="nested"] [data-jd="expand"]').first().click()
+	await ft.locator('[data-jd="row-detail"][data-jd-depth="1"]').first().waitFor({ timeout: 5000 }).catch(() => undefined)
 	check("drill-down: nested table expands again (recursive)", (await ft.locator('[data-jd="row-detail"][data-jd-depth="1"]').count()) === 1)
 	await p4.screenshot({ path: `${prefix}-m4-expanded.png` })
 	// Enter on a focused row toggles it
@@ -272,6 +296,7 @@ check("dark mode", (await page.locator("[data-jd-theme]").getAttribute("data-jd-
 	check("copy row as JSON shows a toast", /Copied 1 row as JSON/.test(toastTxt), toastTxt)
 	// master–detail
 	await p4.goto(`${base4}#/inventory`)
+	await settledLoad(p4)
 	await p4.waitForSelector('[data-jd-item="ec2-table"]')
 	const before = await p4.locator('[data-jd-item="inv-findings"] [data-jd="range"]').textContent()
 	await p4.locator('[data-jd-item="ec2-table"] tbody tr[data-jd-row]').first().locator("td").nth(2).click()
@@ -285,6 +310,7 @@ check("dark mode", (await page.locator("[data-jd-theme]").getAttribute("data-jd-
 	check("master–detail: ✕ clears the master selection", (await p4.locator('[data-jd-item="inv-findings"] [data-jd="range"]').textContent()).endsWith("of 120"))
 	// grouping + selection + rowActions + operators on the Findings page
 	await p4.goto(`${base4}#/findings`)
+	await settledLoad(p4)
 	await p4.waitForSelector('[data-jd-item="grouped"]')
 	const gt = p4.locator('[data-jd-item="grouped"]')
 	const g0 = await gt.locator("[data-jd-group]").first().textContent()
@@ -335,6 +361,7 @@ check("dark mode", (await page.locator("[data-jd-theme]").getAttribute("data-jd-
 	check("rowActions: a custom menu item runs", /^F-\d+/.test(await p4.locator("#clicked").textContent()), await p4.locator("#clicked").textContent())
 	// Theming example: token overrides, class slots, cellClass, item className, CSS-only data-jd override.
 	await p4.goto(url.split("#")[0].replace(/index\.html$/, "examples.html"))
+	await settledLoad(p4)
 	await p4.waitForSelector("#ex-theming [data-jd-row]")
 	const th = p4.locator("#ex-theming")
 	const tok = await th.locator('[data-jd="root"]').evaluate((el) => [getComputedStyle(el).getPropertyValue("--jds-primary").trim(), getComputedStyle(el).getPropertyValue("--jds-card").trim()])
@@ -376,6 +403,7 @@ for (const scheme of ["light", "dark"]) {
 	const sb = await browser.newPage({ viewport: { width: 1400, height: 900 }, colorScheme: scheme })
 	for (const u of SCROLL_PAGES) {
 		await sb.goto(u)
+		await settledLoad(sb)
 		await sb.waitForTimeout(700)
 		const offs = await scrollOffenders(sb)
 		check(`no stray scrollbars: ${u.split("/").pop()} (${scheme})`, offs.length === 0, offs.join(" | "))
@@ -392,6 +420,7 @@ for (const scheme of ["light", "dark"]) {
 		const sp = await browser.newPage({ viewport: { width: 1400, height: 900 }, colorScheme: scheme })
 		for (const u of SHADOW_PAGES) {
 			await sp.goto(u)
+			await settledLoad(sp)
 			await sp.waitForTimeout(600)
 			// Open a row drawer where there is one, so the drawer is measured too.
 			const row = sp.locator("[data-jd-row]").first()
