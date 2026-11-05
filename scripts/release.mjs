@@ -274,7 +274,7 @@ if (DRY) {
 }
 
 // The release notes (this version's changelog section + CDN URLs) go into the tag
-// message, so `gh release create --notes-from-tag` works from any machine.
+// message, so `gh release create --notes-from-tag` works from any clone of the repo.
 const notes = `${changelogSection(readFileSync(CHANGELOG, "utf8"), version) ?? `jsondeck ${TAG}`}\n\nCDN:\n\n${URLS.map((u) => `- ${u}`).join("\n")}\n`
 
 // ---------- 7. commit + tag ----------
@@ -317,7 +317,8 @@ writeFileSync(notesFile, notes)
 // someone else to run: notes from the tag message, no local files needed (the files
 // are already in the tag, which is what jsDelivr serves).
 const ghArgs = ["release", "create", TAG, "-R", REPO, "--title", `jsondeck ${TAG}`, "--notes-file", notesFile, "--verify-tag", ...ASSETS.map((f) => `dist/${f}`)]
-const ghPrinted = `gh release create ${TAG} -R ${REPO} --title "jsondeck ${TAG}" --notes-from-tag --verify-tag`
+// gh refuses --notes-from-tag together with -R, so the printed command runs inside a clone.
+const ghPrinted = `git fetch --tags origin && gh release create ${TAG} --title "jsondeck ${TAG}" --notes-from-tag --verify-tag   (run inside a clone of ${REPO})`
 for (const t of targets) {
 	if (t === "github") {
 		// Only create the release as the repository owner; any other logged-in account
